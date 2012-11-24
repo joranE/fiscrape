@@ -4,7 +4,7 @@
 #' 
 #' @param \dots Ignored
 #' @export
-ibuscrape <- function(...){
+fiscrape <- function(...){
   require(XML)
   con <- dbConnect("SQLite","~/Dropbox/SkiingResults/ibu_update.db")
   while(TRUE){
