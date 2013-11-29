@@ -1,15 +1,15 @@
 convertTime <- function(x,raceType){
   x <- as.character(x)
   #Replace 'h' with ':'
-  gsub('h',':',x,fixed = TRUE)
+  x <- gsub('h',':',x,fixed = TRUE)
   
   #Replace ',' with '.'
-  gsub(',','.',x,fixed = TRUE)
+  x <- gsub(',','.',x,fixed = TRUE)
   
   #Split each time on ':'
   x <- strsplit(x,":")
-  
   processTime <- function(t,raceType){
+    if (length(t) == 0){return(NA)}
     if (as.numeric(t[1]) == 0){t <- t[-1]}
     n <- length(t)
     ind <- NA

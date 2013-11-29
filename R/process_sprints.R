@@ -10,8 +10,8 @@ processSprints <- function(tblsQual,tblsFinal,raceInfo){
     colnames(tblsFinal) <- c('rank','bib','fisid','name','yob',
                              'nation','time')	
   }											    
-  tblsQual <- subset(tblsQual,rank != '')
-  tblsFinal <- subset(tblsFinal,rank != '')
+  tblsQual <- subset(tblsQual,rank != '' & !is.na(name))
+  tblsFinal <- subset(tblsFinal,rank != '' & !is.na(name))
   
   tblsQual$bib <- tblsFinal$bib <- NULL
   

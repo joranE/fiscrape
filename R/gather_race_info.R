@@ -8,22 +8,36 @@ gatherRaceInfo <- function(){
     cat2 <- toupper(readline(prompt = "Cat2: "))
     if (cat2 == 'JUNIOR'){cat2 <- 'Junior'}
     if (cat2 == 'NA'){cat2 <- NA}
-    type <- switch(menu(c('Distance','Sprint')),'Distance','Sprint')
+    type <- switch(menu(c('Distance','Sprint','Stage')),'Distance','Sprint','Stage')
     if (type == 'Distance'){
-      start <- switch(menu(c('Interval','Mass','Pursuit')),'Interval','Mass','Pursuit')
+      start <- switch(menu(c('Interval','Mass','Pursuit','Handicap')),'Interval','Mass','Pursuit','Handicap')
     }
     else{
       start <- NA
     }
+    if (start == 'Pursuit' & !is.na(start)){
+      tech <- 'FC'
+    }
+    else{
+      tech <- switch(menu(c('Freestyle','Classic','Classic/Freestyle')),'F','C','FC')
+    }
     len <- as.numeric(readline(prompt = "Length: "))
-    url <- readline(prompt = "URL: ")
-    
+    if (type != 'Sprint'){
+      url <- readline(prompt = "URL: ")
+    }
+    else{
+      urlQual <- readline(prompt = "Qualification URL: ")
+      urlFin <- readline(prompt = "Finals URL: ")
+      if (toupper(urlQual) == "NA"){urlQual <- NA}
+      if (toupper(urlFin) == "NA"){urlFin <- NA}
+      url <- list(qual = urlQual,final = urlFin)
+    }
     raceInfo <- list(cat1 = cat1,
                      cat2 = cat2,
-                     cat3 = NA,
                      location = location,
                      type = type,
                      start = start,
+                     tech = tech,
                      length = len,
                      date = dt,
                      gender = gender,
@@ -36,8 +50,15 @@ gatherRaceInfo <- function(){
     cat("\nGender    =",raceInfo$gender)
     cat("\nType      =",raceInfo$type)
     cat("\nStart     =",raceInfo$start)
+    cat("\nTechnique =",raceInfo$tech)
     cat("\nLength    =",raceInfo$length)
-    cat("\nURL       =",raceInfo$url)
+    if (type != 'Sprint'){
+      cat("\nURL       =",raceInfo$url)
+    }
+    else{
+      cat("\nQual URL  =",raceInfo$url$qual)
+      cat("\nFinal URL =",raceInfo$url$final)
+    }
     cat("\n")
     result <- menu(c('Correct','Incorrect'))
     if (result == 1){return(raceInfo)}
