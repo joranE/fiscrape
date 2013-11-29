@@ -1,13 +1,13 @@
 checkNames <- function(x){
   #browser()
-  fisids <- my_paste(x$fisid)
+  fisids <- paste_in(x$fisid)
   con <- dbConnect("SQLite","~/Dropbox/SkiingResults/fis_new.db")
-  res <- my_query(con,"select 
+  res <- query(con,"select 
                         fisid,
                         name,
                         count(distinct raceid) n 
                        from main 
-                       where fisid IN (",fisids,")
+                       where fisid in ",fisids,"
                        group by fisid,name")
   dbDisconnect(con)
   res <- ddply(res,.(fisid),function(x){x[which.max(x$n),]})
