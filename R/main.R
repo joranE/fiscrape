@@ -6,7 +6,7 @@
 #' @export
 fiscrape <- function(...){
   require(XML)
-  con <- dbConnect("SQLite","~/Dropbox/SkiingResults/fis_new.db")
+  con <- db_xc()
   while(TRUE){
     cat("Make a selection: \n")
     

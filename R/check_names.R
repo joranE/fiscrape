@@ -1,7 +1,7 @@
 checkNames <- function(x){
   #browser()
   fisids <- paste_in(x$fisid)
-  con <- dbConnect("SQLite","~/Dropbox/SkiingResults/fis_new.db")
+  con <- db_xc()
   res <- query(con,"select 
                         fisid,
                         name,
