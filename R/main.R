@@ -18,9 +18,11 @@ fiscrape <- function(...){
       
       if (raceInfo$type != 'Sprint'){
         #browser()
-        tbls <- readHTMLTable(raceInfo$url,
+        download_time <- system.time(tbls <- readHTMLTable(raceInfo$url,
                               header = TRUE,
-                              which = 2)
+                              which = 2))
+        cat("\nDownload time:\n")
+        print(download_time)
         tbls <- colwise(function(x) {stringr::str_trim(gsub("Â","",x))})(tbls)
         if ("Rank" %ni% colnames(tbls)){
           while(TRUE){
@@ -35,6 +37,12 @@ fiscrape <- function(...){
             selection <- menu(c('Yes','No'))
             if (selection == 1) break
           }
+        }
+        rerank <- FALSE
+        if ('FIS Points Time' %in% colnames(tbls)){
+          tbls$Time <- NULL
+          tbls <- rename(tbls,c('FIS Points Time' = 'Time'))
+          rerank <- TRUE
         }
         fp <- 'FIS Points' %in% colnames(tbls)
         bib <- 'Bib' %in% colnames(tbls)
@@ -75,8 +83,13 @@ fiscrape <- function(...){
                         'rank','rankqual','time','fispoints')]
         #browser()
         tbls$time <- convertTime(tbls$time,raceInfo$type)
+        if (rerank){
+          tbls$rank <- rank(tbls$time,ties.method = "min")
+        }
         #browser()
-        tbls <- checkNames(tbls)
+        name_check_time <- system.time(tbls <- checkNames(tbls))
+        cat("\nName check time:\n")
+        print(name_check_time)
         #browser()
         if (any(tbls$age < 11 | tbls$age > 70,na.rm = TRUE)){
           tbls$age[(tbls$age < 11 | tbls$age > 70)] <- NA
@@ -157,7 +170,7 @@ fiscrape <- function(...){
           next
         }
         tbls <- checkNames(tbls)
-        if (any(tbls$age < 11 | tbls$age > 70)){
+        if (any(tbls$age < 11 | tbls$age > 70,na.rm = TRUE)){
           tbls$age[(tbls$age < 11 | tbls$age > 70)] <- NA
         }
         print(tbls)
