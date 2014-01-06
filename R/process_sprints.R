@@ -6,10 +6,14 @@ processSprints <- function(tblsQual,tblsFinal,raceInfo){
     colnames(tblsFinal) <- c('rank','bib','fisid','name','yob',
                              'nation','time','fispoints')
   }
-  else{
+  if (ncol(tblsFinal) == 7){
     colnames(tblsFinal) <- c('rank','bib','fisid','name','yob',
-                             'nation','time')	
-  }											    
+                             'nation','time')  
+  }
+  if (ncol(tblsFinal) == 6){
+    colnames(tblsFinal) <- c('rank','bib','fisid','name','yob',
+                             'nation')  
+  }									    
   tblsQual <- subset(tblsQual,rank != '' & !is.na(name))
   tblsFinal <- subset(tblsFinal,rank != '' & !is.na(name))
   
