@@ -8,7 +8,7 @@
 #' @export
 fiscrape <- function(...){
   con <- dbConnect(MySQL(), 
-                   dbname = databaseName, 
+                   dbname = options()$mysql$dbName, 
                    host = options()$mysql$host, 
                    port = options()$mysql$port, 
                    user = options()$mysql$user, 
@@ -29,7 +29,7 @@ fiscrape <- function(...){
                               which = 2))
         cat("\nDownload time:\n")
         print(download_time)
-        tbls <- colwise(function(x) {stringr::str_trim(gsub("Â","",x))})(tbls)
+        tbls <- colwise(function(x) {str_trim(gsub("Â","",x))})(tbls)
         if ("Rank" %ni% colnames(tbls)){
           while(TRUE){
             print(tbls)
