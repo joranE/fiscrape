@@ -5,6 +5,8 @@
 #' @param \dots Ignored
 #' @importFrom XML readHTMLTable
 #' @importFrom stringr str_trim
+#' @importFrom plyr colwise
+#' @importFrom plyr rename
 #' @export
 fiscrape <- function(...){
   con <- dbConnect(MySQL(), 
