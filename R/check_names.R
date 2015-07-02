@@ -1,3 +1,6 @@
+#' @importFrom plyr ddply
+#' @importFrom statskier paste_in
+#' @importFrom statskier query
 checkNames <- function(x){
   #browser()
   fisids <- paste_in(x$fisid)

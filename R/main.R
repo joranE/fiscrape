@@ -3,6 +3,8 @@
 #' The main function
 #' 
 #' @param \dots Ignored
+#' @importFrom XML readHTMLTable
+#' @importFrom stringr str_trim
 #' @export
 fiscrape <- function(...){
   con <- dbConnect(MySQL(), 
