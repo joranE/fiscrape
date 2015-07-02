@@ -39,10 +39,17 @@ fiscrape <- function(...){
           }
         }
         rerank <- FALSE
-        if ('FIS Points Time' %in% colnames(tbls)){
+        if ("Behind" %in% colnames(tbls)){
+          tbls$Behind <- NULL
+        }
+        if (any(grepl('FIS Points Time',colnames(tbls)))){
           tbls$Time <- NULL
           tbls <- rename(tbls,c('FIS Points Time' = 'Time'))
           rerank <- TRUE
+        }
+        ind <- grepl('Rk',colnames(tbls))
+        if (any(ind)){
+          tbls <- tbls[,!ind]
         }
         fp <- 'FIS Points' %in% colnames(tbls)
         bib <- 'Bib' %in% colnames(tbls)
@@ -53,12 +60,21 @@ fiscrape <- function(...){
         if (fp & !bib){
           colnames(tbls) <- c('rank','fisid','name','yob','nation','time','fispoints')
         }
-        if (!fp){
+        if (!fp & bib){
           colnames(tbls) <- c('rank','bib','fisid','name','yob','nation','time')
           tbls$fispoints <- NA
         }
+        if (!fp & !bib){
+          colnames(tbls) <- c('rank','fisid','name','yob','nation','time')
+          tbls$fispoints <- NA
+        }
         
-        tbls <- subset(tbls,rank != '' & !is.na(name))
+        if (all(is.na(as.numeric(tbls$rank)))){
+          tbls <- subset(tbls,!is.na(name))
+          rerank <- TRUE
+        } else{
+          tbls <- subset(tbls,rank != '' & !is.na(name))
+        }
         
         tbls$rank <- as.integer(tbls$rank)
         tbls$yob <- as.integer(tbls$yob)
@@ -84,12 +100,13 @@ fiscrape <- function(...){
         #browser()
         tbls$time <- convertTime(tbls$time,raceInfo$type)
         if (rerank){
+          tbls <- subset(tbls,!is.na(time))
           tbls$rank <- rank(tbls$time,ties.method = "min")
         }
         #browser()
         name_check_time <- system.time(tbls <- checkNames(tbls))
-        cat("\nName check time:\n")
-        print(name_check_time)
+        #cat("\nName check time:\n")
+        #print(name_check_time)
         #browser()
         if (any(tbls$age < 11 | tbls$age > 70,na.rm = TRUE)){
           tbls$age[(tbls$age < 11 | tbls$age > 70)] <- NA
@@ -131,6 +148,9 @@ fiscrape <- function(...){
               selection <- menu(c('Yes','No'))
               if (selection == 1) break
             }
+          }
+          if ("Behind" %in% colnames(tblsQual)){
+            tblsQual$Behind <- NULL
           }
         }
         if (is.na(raceInfo$url$final)){tblsFinal <- NULL}

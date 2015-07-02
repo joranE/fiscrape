@@ -2,7 +2,8 @@ convertTime <- function(x,raceType){
   x <- as.character(x)
   #Replace 'h' with ':'
   x <- gsub('h',':',x,fixed = TRUE)
-  
+  #Replace any leading : with ""
+  x <- gsub("^:","",x)
   #Replace ',' with '.'
   x <- gsub(',','.',x,fixed = TRUE)
   
