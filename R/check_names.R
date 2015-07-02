@@ -18,7 +18,7 @@ checkNames <- function(x){
                        where fisid in ",fisids,"
                        group by fisid,name")
   dbDisconnect(con)
-  res <- ddply(res,.(fisid),function(x){x[which.max(x$n),]})
+  res <- ddply(res,c("fisid"),function(x){x[which.max(x$n),]})
 #   tbl <- table(res$fisid)
 #   if (any(tbl > 1)){
 #     res <- res[res$name %in% names(tbl)[tbl > 1],]
