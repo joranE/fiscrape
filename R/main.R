@@ -5,8 +5,12 @@
 #' @param \dots Ignored
 #' @export
 fiscrape <- function(...){
-  require(XML)
-  con <- db_xc()
+  con <- dbConnect(MySQL(), 
+                   dbname = databaseName, 
+                   host = options()$mysql$host, 
+                   port = options()$mysql$port, 
+                   user = options()$mysql$user, 
+                   password = options()$mysql$password)
   while(TRUE){
     cat("Make a selection: \n")
     
@@ -120,11 +124,15 @@ fiscrape <- function(...){
         }
         else{
           cat("\nUploading...\n")
-          sql <- "insert into main (raceid,date,season,location,gender,length,tech,type,start,
-          cat1,cat2,fisid,name,yob,age,nation,rank,rankqual,time,fispoints) 
-          values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
-          bulk_insert(con,sql,tbls)
-          verifyUpload(tbls)
+          check <- dbWriteTable(conn = con,
+                                name = "main",
+                                value = tbls, 
+                                row.names = FALSE, 
+                                overwrite = FALSE, 
+                                append = TRUE)
+          if (!check){
+            stop("Upload failed.")
+          }
         }
       }
       else{
@@ -201,11 +209,15 @@ fiscrape <- function(...){
         }
         else{
           cat("\nUploading...\n")
-          sql <- "insert into main (raceid,date,season,location,gender,length,tech,type,start,
-												cat1,cat2,fisid,name,yob,age,nation,rank,rankqual,time,fispoints) 
-										values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"					
-          bulk_insert(con,sql,tbls)
-          verifyUpload(tbls)
+          check <- dbWriteTable(conn = con,
+                                name = "main",
+                                value = tbls, 
+                                row.names = FALSE, 
+                                overwrite = FALSE, 
+                                append = TRUE)
+          if (!check){
+            stop("Upload failed.")
+          }
         }
       }
     }
