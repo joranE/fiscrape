@@ -9,12 +9,13 @@
 #' @importFrom plyr rename
 #' @export
 fiscrape <- function(...){
-  con <- dbConnect(MySQL(), 
-                   dbname = options()$mysql$dbName, 
-                   host = options()$mysql$host, 
-                   port = options()$mysql$port, 
-                   user = options()$mysql$user, 
-                   password = options()$mysql$password)
+  con_remote <- dbConnect(MySQL(), 
+                          dbname = options()$mysql$dbName, 
+                          host = options()$mysql$host, 
+                          port = options()$mysql$port, 
+                          user = options()$mysql$user, 
+                          password = options()$mysql$password)
+  con <- db_xc()
   while(TRUE){
     cat("Make a selection: \n")
     
@@ -128,7 +129,7 @@ fiscrape <- function(...){
         }
         else{
           cat("\nUploading...\n")
-          check <- dbWriteTable(conn = con,
+          check <- dbWriteTable(conn = con_remote,
                                 name = "main",
                                 value = tbls, 
                                 row.names = FALSE, 
@@ -137,6 +138,12 @@ fiscrape <- function(...){
           if (!check){
             stop("Upload failed.")
           }
+          sql <- "insert into main (raceid,date,season,location,
+                                    gender,length,tech,type,start,
+                                    cat1,cat2,fisid,name,yob,age,nation,
+                                    rank,rankqual,time,fispoints) 
+                              values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+          bulk_insert(con,sql,tbls)
         }
       }
       else{
@@ -222,6 +229,12 @@ fiscrape <- function(...){
           if (!check){
             stop("Upload failed.")
           }
+          sql <- "insert into main (raceid,date,season,location,
+                                    gender,length,tech,type,start,
+                                    cat1,cat2,fisid,name,yob,age,nation,
+                                    rank,rankqual,time,fispoints) 
+                              values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+          bulk_insert(con,sql,tbls)
         }
       }
     }
