@@ -135,6 +135,14 @@ fiscrape <- function(...){
                                 row.names = FALSE, 
                                 overwrite = FALSE, 
                                 append = TRUE)
+          median_time <- data.frame(raceid = tbls$raceid[1],
+                                    median_time = median(tbls$time,na.rm = TRUE))
+          dbWriteTable(conn = con_remote,
+                       name = "median_race_time",
+                       value = median_time,
+                       row.names = FALSE,
+                       overwrite = FALSE,
+                       append = TRUE)
           if (!check){
             stop("Upload failed.")
           }
@@ -144,6 +152,12 @@ fiscrape <- function(...){
                                     rank,rankqual,time,fispoints) 
                               values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
           bulk_insert(con,sql,tbls)
+          dbWriteTable(conn = con,
+                       name = "median_race_time",
+                       value = median_time,
+                       row.names = FALSE,
+                       overwrite = FALSE,
+                       append = TRUE)
         }
       }
       else{
@@ -220,12 +234,20 @@ fiscrape <- function(...){
         }
         else{
           cat("\nUploading...\n")
-          check <- dbWriteTable(conn = con,
+          check <- dbWriteTable(conn = con_remote,
                                 name = "main",
                                 value = tbls, 
                                 row.names = FALSE, 
                                 overwrite = FALSE, 
                                 append = TRUE)
+          median_time <- data.frame(raceid = tbls$raceid[1],
+                                    median_time = median(tbls$time,na.rm = TRUE))
+          dbWriteTable(conn = con_remote,
+                       name = "median_race_time",
+                       value = median_time,
+                       row.names = FALSE,
+                       overwrite = FALSE,
+                       append = TRUE)
           if (!check){
             stop("Upload failed.")
           }
@@ -235,6 +257,12 @@ fiscrape <- function(...){
                                     rank,rankqual,time,fispoints) 
                               values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
           bulk_insert(con,sql,tbls)
+          dbWriteTable(conn = con,
+                       name = "median_race_time",
+                       value = median_time,
+                       row.names = FALSE,
+                       overwrite = FALSE,
+                       append = TRUE)
         }
       }
     }
