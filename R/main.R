@@ -7,6 +7,7 @@
 #' @importFrom stringr str_trim
 #' @importFrom plyr colwise
 #' @importFrom plyr rename
+#' @importFrom statskier db_xc
 #' @export
 fiscrape <- function(...){
   con_remote <- dbConnect(MySQL(), 

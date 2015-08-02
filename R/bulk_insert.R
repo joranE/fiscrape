@@ -1,3 +1,4 @@
+#' @import RSQLite
 bulk_insert <- function(cn,sql,data)
 {
   #dbBeginTransation(cn)
