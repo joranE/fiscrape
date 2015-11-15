@@ -3,14 +3,14 @@
 #' @importFrom statskier query
 checkNames <- function(x){
   #browser()
-  fisids <- paste_in(x$fisid)
+  fisids <- statskier::paste_in(x$fisid)
   con <- dbConnect(MySQL(), 
                    dbname = options()$mysql$dbName, 
                    host = options()$mysql$host, 
                    port = options()$mysql$port, 
                    user = options()$mysql$user, 
                    password = options()$mysql$password)
-  res <- query(con,"select 
+  res <- statskier::query(con,"select 
                         fisid,
                         name,
                         count(distinct raceid) n 
@@ -18,7 +18,7 @@ checkNames <- function(x){
                        where fisid in ",fisids,"
                        group by fisid,name")
   dbDisconnect(con)
-  res <- ddply(res,c("fisid"),function(x){x[which.max(x$n),]})
+  res <- plyr::ddply(res,c("fisid"),function(x){x[which.max(x$n),]})
 #   tbl <- table(res$fisid)
 #   if (any(tbl > 1)){
 #     res <- res[res$name %in% names(tbl)[tbl > 1],]

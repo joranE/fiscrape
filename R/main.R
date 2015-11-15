@@ -16,7 +16,7 @@ fiscrape <- function(...){
                           port = options()$mysql$port, 
                           user = options()$mysql$user, 
                           password = options()$mysql$password)
-  con <- db_xc()
+  con <- statskier::db_xc()
   while(TRUE){
     cat("Make a selection: \n")
     
@@ -28,21 +28,21 @@ fiscrape <- function(...){
       
       if (raceInfo$type != 'Sprint'){
         #browser()
-        download_time <- system.time(tbls <- readHTMLTable(raceInfo$url,
+        download_time <- system.time(tbls <- XML::readHTMLTable(raceInfo$url,
                               header = TRUE,
                               which = 2))
         cat("\nDownload time:\n")
         print(download_time)
-        tbls <- colwise(function(x) {str_trim(gsub("Â","",x))})(tbls)
+        tbls <- plyr::colwise(function(x) {stringr::str_trim(gsub("Â","",x))})(tbls)
         if ("Rank" %ni% colnames(tbls)){
           while(TRUE){
             print(tbls)
             cat("\nI don't think this was the right table.\n")
             selection <- readline(prompt = 'Try table number...')
-            tbls <- readHTMLTable(raceInfo$url,
+            tbls <- XML::readHTMLTable(raceInfo$url,
                                   header = TRUE,
                                   which = as.integer(selection))
-            tbls <- colwise(function(x) {stringr::str_trim(gsub("Â","",x))})(tbls)
+            tbls <- plyr::colwise(function(x) {stringr::str_trim(gsub("Â","",x))})(tbls)
             print(tbls)
             selection <- menu(c('Yes','No'))
             if (selection == 1) break
@@ -54,7 +54,7 @@ fiscrape <- function(...){
         }
         if (any(grepl('FIS Points Time',colnames(tbls)))){
           tbls$Time <- NULL
-          tbls <- rename(tbls,c('FIS Points Time' = 'Time'))
+          tbls <- plyr::rename(tbls,c('FIS Points Time' = 'Time'))
           rerank <- TRUE
         }
         ind <- grepl('Rk',colnames(tbls))
@@ -165,19 +165,19 @@ fiscrape <- function(...){
         if (is.na(raceInfo$url$qual)) {tblsQual <- NULL}
         else{
           #browser()
-          tblsQual <- readHTMLTable(raceInfo$url$qual,
+          tblsQual <- XML::readHTMLTable(raceInfo$url$qual,
                                     header = TRUE,
                                     which = 2)
-          tblsQual <- colwise(function(x) {stringr::str_trim(gsub("Â","",x))})(tblsQual)
+          tblsQual <- plyr::colwise(function(x) {stringr::str_trim(gsub("Â","",x))})(tblsQual)
           if ("Rank" %ni% colnames(tblsQual)){
             while(TRUE){
               print(tblsQual)
               cat("\nI don't think this was the right table.\n")
               selection <- readline(prompt = 'Try table number...')
-              tblsQual <- readHTMLTable(raceInfo$url$qual,
+              tblsQual <- XML::readHTMLTable(raceInfo$url$qual,
                                     header = TRUE,
                                     which = as.integer(selection))
-              tblsQual <- colwise(function(x) {stringr::str_trim(gsub("Â","",x))})(tblsQual)
+              tblsQual <- plyr::colwise(function(x) {stringr::str_trim(gsub("Â","",x))})(tblsQual)
               print(tblsQual)
               selection <- menu(c('Yes','No'))
               if (selection == 1) break
@@ -190,19 +190,19 @@ fiscrape <- function(...){
         if (is.na(raceInfo$url$final)){tblsFinal <- NULL}
         else{
           #browser()
-          tblsFinal <- readHTMLTable(raceInfo$url$final,
+          tblsFinal <- XML::readHTMLTable(raceInfo$url$final,
                                      header = TRUE,
                                      which = 2)
-          tblsFinal <- colwise(function(x) {stringr::str_trim(gsub("Â","",x))})(tblsFinal)
+          tblsFinal <- plyr::colwise(function(x) {stringr::str_trim(gsub("Â","",x))})(tblsFinal)
           if ("Rank" %ni% colnames(tblsFinal)){
             while(TRUE){
               print(tblsFinal)
               cat("\nI don't think this was the right table.\n")
               selection <- readline(prompt = 'Try table number...')
-              tblsFinal <- readHTMLTable(raceInfo$url$final,
+              tblsFinal <- XML::readHTMLTable(raceInfo$url$final,
                                         header = TRUE,
                                         which = as.integer(selection))
-              tblsFinal <- colwise(function(x) {stringr::str_trim(gsub("Â","",x))})(tblsFinal)
+              tblsFinal <- plyr::colwise(function(x) {stringr::str_trim(gsub("Â","",x))})(tblsFinal)
               print(tblsFinal)
               selection <- menu(c('Yes','No'))
               if (selection == 1) break
