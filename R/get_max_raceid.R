@@ -1,5 +1,10 @@
 getMaxRaceID <- function(){
-  con <- db_xc()
+  con <- dbConnect(MySQL(), 
+                   dbname = options()$mysql$dbName, 
+                   host = options()$mysql$host, 
+                   port = options()$mysql$port, 
+                   user = options()$mysql$user, 
+                   password = options()$mysql$password)
   res <- query(con,"select max(raceid) mx from main")
   dbDisconnect(con)
   res$mx

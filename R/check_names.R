@@ -1,7 +1,15 @@
+#' @importFrom plyr ddply
+#' @importFrom statskier paste_in
+#' @importFrom statskier query
 checkNames <- function(x){
   #browser()
   fisids <- paste_in(x$fisid)
-  con <- db_xc()
+  con <- dbConnect(MySQL(), 
+                   dbname = options()$mysql$dbName, 
+                   host = options()$mysql$host, 
+                   port = options()$mysql$port, 
+                   user = options()$mysql$user, 
+                   password = options()$mysql$password)
   res <- query(con,"select 
                         fisid,
                         name,
@@ -10,7 +18,7 @@ checkNames <- function(x){
                        where fisid in ",fisids,"
                        group by fisid,name")
   dbDisconnect(con)
-  res <- ddply(res,.(fisid),function(x){x[which.max(x$n),]})
+  res <- ddply(res,c("fisid"),function(x){x[which.max(x$n),]})
 #   tbl <- table(res$fisid)
 #   if (any(tbl > 1)){
 #     res <- res[res$name %in% names(tbl)[tbl > 1],]

@@ -24,10 +24,19 @@ gatherRaceInfo <- function(){
     len <- as.numeric(readline(prompt = "Length: "))
     if (type != 'Sprint'){
       url <- readline(prompt = "URL: ")
+      if (grepl(pattern = "^https",x = url)){
+        url <- gsub(pattern = "^https",replacement = "http",x = url)
+      }
     }
     else{
       urlQual <- readline(prompt = "Qualification URL: ")
       urlFin <- readline(prompt = "Finals URL: ")
+      if (grepl(pattern = "^https",x = urlQual)){
+        urlQual <- gsub(pattern = "^https",replacement = "http",x = urlQual)
+      }
+      if (grepl(pattern = "^https",x = urlFin)){
+        urlFin <- gsub(pattern = "^https",replacement = "http",x = urlFin)
+      }
       if (toupper(urlQual) == "NA"){urlQual <- NA}
       if (toupper(urlFin) == "NA"){urlFin <- NA}
       url <- list(qual = urlQual,final = urlFin)
