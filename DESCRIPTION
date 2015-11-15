@@ -3,14 +3,15 @@ Type: Package
 Title: Screen scraper for FIS XC races
 Version: 1.0
 Depends:
-  DBI,
-  RMySQL
+    DBI,
+    RMySQL
 Imports:
-  XML,
-  plyr,
-  stringr
+    XML,
+    plyr,
+    stringr
 Date: 2015-07-02
 Author: Joran Elias
 Maintainer: Joran Elias <statisticalskier@gmail.com>
 Description: What you think.
 License: GPL
+RoxygenNote: 5.0.1
