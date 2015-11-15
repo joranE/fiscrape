@@ -3,9 +3,19 @@
 #' The main function
 #' 
 #' @param \dots Ignored
+#' @importFrom XML readHTMLTable
+#' @importFrom stringr str_trim
+#' @importFrom plyr colwise
+#' @importFrom plyr rename
+#' @importFrom statskier db_xc
 #' @export
 fiscrape <- function(...){
-  require(XML)
+  con_remote <- dbConnect(MySQL(), 
+                          dbname = options()$mysql$dbName, 
+                          host = options()$mysql$host, 
+                          port = options()$mysql$port, 
+                          user = options()$mysql$user, 
+                          password = options()$mysql$password)
   con <- db_xc()
   while(TRUE){
     cat("Make a selection: \n")
@@ -23,7 +33,7 @@ fiscrape <- function(...){
                               which = 2))
         cat("\nDownload time:\n")
         print(download_time)
-        tbls <- colwise(function(x) {stringr::str_trim(gsub("Â","",x))})(tbls)
+        tbls <- colwise(function(x) {str_trim(gsub("Â","",x))})(tbls)
         if ("Rank" %ni% colnames(tbls)){
           while(TRUE){
             print(tbls)
@@ -120,11 +130,35 @@ fiscrape <- function(...){
         }
         else{
           cat("\nUploading...\n")
-          sql <- "insert into main (raceid,date,season,location,gender,length,tech,type,start,
-          cat1,cat2,fisid,name,yob,age,nation,rank,rankqual,time,fispoints) 
-          values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+          check <- dbWriteTable(conn = con_remote,
+                                name = "main",
+                                value = tbls, 
+                                row.names = FALSE, 
+                                overwrite = FALSE, 
+                                append = TRUE)
+          median_time <- data.frame(raceid = tbls$raceid[1],
+                                    median_time = median(tbls$time,na.rm = TRUE))
+          dbWriteTable(conn = con_remote,
+                       name = "median_race_time",
+                       value = median_time,
+                       row.names = FALSE,
+                       overwrite = FALSE,
+                       append = TRUE)
+          if (!check){
+            stop("Upload failed.")
+          }
+          sql <- "insert into main (raceid,date,season,location,
+                                    gender,length,tech,type,start,
+                                    cat1,cat2,fisid,name,yob,age,nation,
+                                    rank,rankqual,time,fispoints) 
+                              values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
           bulk_insert(con,sql,tbls)
-          verifyUpload(tbls)
+          dbWriteTable(conn = con,
+                       name = "median_race_time",
+                       value = median_time,
+                       row.names = FALSE,
+                       overwrite = FALSE,
+                       append = TRUE)
         }
       }
       else{
@@ -201,11 +235,35 @@ fiscrape <- function(...){
         }
         else{
           cat("\nUploading...\n")
-          sql <- "insert into main (raceid,date,season,location,gender,length,tech,type,start,
-												cat1,cat2,fisid,name,yob,age,nation,rank,rankqual,time,fispoints) 
-										values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"					
+          check <- dbWriteTable(conn = con_remote,
+                                name = "main",
+                                value = tbls, 
+                                row.names = FALSE, 
+                                overwrite = FALSE, 
+                                append = TRUE)
+          median_time <- data.frame(raceid = tbls$raceid[1],
+                                    median_time = median(tbls$time,na.rm = TRUE))
+          dbWriteTable(conn = con_remote,
+                       name = "median_race_time",
+                       value = median_time,
+                       row.names = FALSE,
+                       overwrite = FALSE,
+                       append = TRUE)
+          if (!check){
+            stop("Upload failed.")
+          }
+          sql <- "insert into main (raceid,date,season,location,
+                                    gender,length,tech,type,start,
+                                    cat1,cat2,fisid,name,yob,age,nation,
+                                    rank,rankqual,time,fispoints) 
+                              values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
           bulk_insert(con,sql,tbls)
-          verifyUpload(tbls)
+          dbWriteTable(conn = con,
+                       name = "median_race_time",
+                       value = median_time,
+                       row.names = FALSE,
+                       overwrite = FALSE,
+                       append = TRUE)
         }
       }
     }
