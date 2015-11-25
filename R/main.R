@@ -144,6 +144,13 @@ fiscrape <- function(...){
                        row.names = FALSE,
                        overwrite = FALSE,
                        append = TRUE)
+          race_url <- data.frame(raceid = tbls$raceid[1],url1 = raceInfo$url,url2 = NA)
+          dbWriteTable(conn = con_remote,
+                       name = "race_url",
+                       value = race_url,
+                       row.names = FALSE,
+                       overwrite = FALSE,
+                       append = TRUE)
           if (!check){
             stop("Upload failed.")
           }
@@ -156,6 +163,12 @@ fiscrape <- function(...){
           dbWriteTable(conn = con,
                        name = "median_race_time",
                        value = median_time,
+                       row.names = FALSE,
+                       overwrite = FALSE,
+                       append = TRUE)
+          dbWriteTable(conn = con,
+                       name = "race_url",
+                       value = race_url,
                        row.names = FALSE,
                        overwrite = FALSE,
                        append = TRUE)
@@ -249,6 +262,15 @@ fiscrape <- function(...){
                        row.names = FALSE,
                        overwrite = FALSE,
                        append = TRUE)
+          race_url <- data.frame(raceid = tbls$raceid[1],
+                                 url1 = raceInfo$url$qual,
+                                 url2 = raceInfo$url$final)
+          dbWriteTable(conn = con_remote,
+                       name = "race_url",
+                       value = race_url,
+                       row.names = FALSE,
+                       overwrite = FALSE,
+                       append = TRUE)
           if (!check){
             stop("Upload failed.")
           }
@@ -261,6 +283,12 @@ fiscrape <- function(...){
           dbWriteTable(conn = con,
                        name = "median_race_time",
                        value = median_time,
+                       row.names = FALSE,
+                       overwrite = FALSE,
+                       append = TRUE)
+          dbWriteTable(conn = con,
+                       name = "race_url",
+                       value = race_url,
                        row.names = FALSE,
                        overwrite = FALSE,
                        append = TRUE)
