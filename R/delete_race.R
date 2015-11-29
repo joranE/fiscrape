@@ -1,4 +1,11 @@
 #' Delete Race from Dataase
+#' 
+#' Delete race data from both remote and local
+#' databases from main, race_url and median_race_time
+#' tables all in one go. Useful for when FIS fucks up the
+#' results and you need to start over.
+#' 
+#' @param raceid integer
 #' @export
 delete_race <- function(raceid = NULL){
  conr <- options()$statskier_remote
