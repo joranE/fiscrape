@@ -27,3 +27,35 @@ delete_race <- function(raceid = NULL){
    query(conl,sprintf("delete from median_race_time where raceid = %s",raceid))
  }
 }
+
+#' Update Race Info
+#'
+#' Update race info in both remote and local
+#' databases for a specified raceid.
+#'
+#' @param raceid integer
+#' @param ... named changes, e.g. \code{length = 30} or \code{cat1 = "WC"}
+#' @export
+update_race <- function(raceid,...){
+  conr <- options()$statskier_remote
+  conl <- options()$statskier_local
+  race <- statskier::query(conl,sprintf("select * from main where raceid = %s",raceid))
+  cat("Preparing to update the following race:\n")
+  print(race[1,c('raceid','date','season','location','gender','length','tech','type','start','cat1','cat2')])
+  changes <- list(...)
+  if (length(changes) == 0){
+    stop("No changes specified.")
+  }
+  changes <- lapply(changes,function(x) if (is.character(x)) {paste0("'",x,"'")} else {x})
+  set_clause <- paste(names(changes),changes,sep = " = ",collapse = ", ")
+  cat("with the following changes:")
+  print(set_clause)
+  choice <- menu(choices = c("Abort","Continue"),title = "Choose one")
+  if (choice <= 1){
+    cat("\nExiting and doing nothing...")
+    return(NULL)
+  }else{
+    query(conr,sprintf("update main set %s where raceid = %s",set_clause,raceid))
+    query(conl,sprintf("update main set %s where raceid = %s",set_clause,raceid))
+  }
+}
