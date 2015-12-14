@@ -1,8 +1,7 @@
 #' @importFrom plyr ddply
-#' @importFrom statskier paste_in
 checkNames <- function(x){
   #browser()
-  fisids <- statskier::paste_in(x$fisid)
+  fisids <- paste_in(x$fisid)
   con_local <- db_xc_local()
   res <- ss_query(con_local,sprintf("select 
                         fisid,

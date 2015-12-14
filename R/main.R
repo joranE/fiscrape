@@ -5,8 +5,6 @@
 #' @param \dots Ignored
 #' @importFrom XML readHTMLTable
 #' @importFrom stringr str_trim
-#' @importFrom plyr colwise
-#' @importFrom plyr rename
 #' @export
 fiscrape <- function(...){
   con_remote <- db_xc_remote()
@@ -27,7 +25,9 @@ fiscrape <- function(...){
                               which = 2))
         cat("\nDownload time:\n")
         print(download_time)
-        tbls <- plyr::colwise(function(x) {stringr::str_trim(gsub("Â","",x))})(tbls)
+        browser()
+        #tbls <- plyr::colwise(function(x) {stringr::str_trim(gsub("Â","",x))})(tbls)
+        tbls[] <- lapply(tbls,function(x) {stringr::str_trim(gsub("Â","",x))})
         if ("Rank" %ni% colnames(tbls)){
           while(TRUE){
             print(tbls)
@@ -36,7 +36,8 @@ fiscrape <- function(...){
             tbls <- XML::readHTMLTable(raceInfo$url,
                                   header = TRUE,
                                   which = as.integer(selection))
-            tbls <- plyr::colwise(function(x) {stringr::str_trim(gsub("Â","",x))})(tbls)
+            #tbls <- plyr::colwise(function(x) {stringr::str_trim(gsub("Â","",x))})(tbls)
+            tbls[] <- lapply(tbls,function(x) {stringr::str_trim(gsub("Â","",x))})
             print(tbls)
             selection <- menu(c('Yes','No'))
             if (selection == 1) break
@@ -48,7 +49,8 @@ fiscrape <- function(...){
         }
         if (any(grepl('FIS Points Time',colnames(tbls)))){
           tbls$Time <- NULL
-          tbls <- plyr::rename(tbls,c('FIS Points Time' = 'Time'))
+          colnames(tbls)[grepl('FIS Points Time')] <- 'Time'
+          #tbls <- plyr::rename(tbls,c('FIS Points Time' = 'Time'))
           rerank <- TRUE
         }
         ind <- grepl('Rk',colnames(tbls))
@@ -175,7 +177,8 @@ fiscrape <- function(...){
           tblsQual <- XML::readHTMLTable(raceInfo$url$qual,
                                     header = TRUE,
                                     which = 2)
-          tblsQual <- plyr::colwise(function(x) {stringr::str_trim(gsub("Â","",x))})(tblsQual)
+          #tblsQual <- plyr::colwise(function(x) {stringr::str_trim(gsub("Â","",x))})(tblsQual)
+          tblsQual[] <- lapply(tblsQual,function(x) {stringr::str_trim(gsub("Â","",x))})
           if ("Rank" %ni% colnames(tblsQual)){
             while(TRUE){
               print(tblsQual)
@@ -184,7 +187,8 @@ fiscrape <- function(...){
               tblsQual <- XML::readHTMLTable(raceInfo$url$qual,
                                     header = TRUE,
                                     which = as.integer(selection))
-              tblsQual <- plyr::colwise(function(x) {stringr::str_trim(gsub("Â","",x))})(tblsQual)
+              #tblsQual <- plyr::colwise(function(x) {stringr::str_trim(gsub("Â","",x))})(tblsQual)
+              tblsQual[] <- lapply(tblsQual,function(x) {stringr::str_trim(gsub("Â","",x))})
               print(tblsQual)
               selection <- menu(c('Yes','No'))
               if (selection == 1) break
@@ -200,7 +204,8 @@ fiscrape <- function(...){
           tblsFinal <- XML::readHTMLTable(raceInfo$url$final,
                                      header = TRUE,
                                      which = 2)
-          tblsFinal <- plyr::colwise(function(x) {stringr::str_trim(gsub("Â","",x))})(tblsFinal)
+          #tblsFinal <- plyr::colwise(function(x) {stringr::str_trim(gsub("Â","",x))})(tblsFinal)
+          tblsFinal[] <- lapply(tblsFinal,function(x) {stringr::str_trim(gsub("Â","",x))})
           if ("Rank" %ni% colnames(tblsFinal)){
             while(TRUE){
               print(tblsFinal)
@@ -209,7 +214,8 @@ fiscrape <- function(...){
               tblsFinal <- XML::readHTMLTable(raceInfo$url$final,
                                         header = TRUE,
                                         which = as.integer(selection))
-              tblsFinal <- plyr::colwise(function(x) {stringr::str_trim(gsub("Â","",x))})(tblsFinal)
+              #tblsFinal <- plyr::colwise(function(x) {stringr::str_trim(gsub("Â","",x))})(tblsFinal)
+              tblsFinal[] <- lapply(tblsFinal,function(x) {stringr::str_trim(gsub("Â","",x))})
               print(tblsFinal)
               selection <- menu(c('Yes','No'))
               if (selection == 1) break
