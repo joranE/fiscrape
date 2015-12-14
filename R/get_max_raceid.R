@@ -1,11 +1,6 @@
 getMaxRaceID <- function(){
-  con <- dbConnect(MySQL(), 
-                   dbname = options()$mysql$dbName, 
-                   host = options()$mysql$host, 
-                   port = options()$mysql$port, 
-                   user = options()$mysql$user, 
-                   password = options()$mysql$password)
-  res <- statskier::query(con,"select max(raceid) mx from main")
-  dbDisconnect(con)
+  con_local <- db_xc_local()
+  res <- ss_query(con_local,"select max(raceid) mx from main")
+  dbDisconnect(con_local)
   res$mx
 }

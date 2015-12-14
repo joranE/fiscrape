@@ -7,16 +7,10 @@
 #' @importFrom stringr str_trim
 #' @importFrom plyr colwise
 #' @importFrom plyr rename
-#' @importFrom statskier db_xc
 #' @export
 fiscrape <- function(...){
-  con_remote <- dbConnect(MySQL(), 
-                          dbname = options()$mysql$dbName, 
-                          host = options()$mysql$host, 
-                          port = options()$mysql$port, 
-                          user = options()$mysql$user, 
-                          password = options()$mysql$password)
-  con <- statskier::db_xc()
+  con_remote <- db_xc_remote()
+  con_local <- db_xc_local()
   while(TRUE){
     cat("Make a selection: \n")
     
@@ -159,14 +153,14 @@ fiscrape <- function(...){
                                     cat1,cat2,fisid,name,yob,age,nation,
                                     rank,rankqual,time,fispoints) 
                               values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
-          bulk_insert(con,sql,tbls)
-          dbWriteTable(conn = con,
+          bulk_insert(con_local,sql,tbls)
+          dbWriteTable(conn = con_local,
                        name = "median_race_time",
                        value = median_time,
                        row.names = FALSE,
                        overwrite = FALSE,
                        append = TRUE)
-          dbWriteTable(conn = con,
+          dbWriteTable(conn = con_local,
                        name = "race_url",
                        value = race_url,
                        row.names = FALSE,
@@ -279,14 +273,14 @@ fiscrape <- function(...){
                                     cat1,cat2,fisid,name,yob,age,nation,
                                     rank,rankqual,time,fispoints) 
                               values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
-          bulk_insert(con,sql,tbls)
-          dbWriteTable(conn = con,
+          bulk_insert(con_local,sql,tbls)
+          dbWriteTable(conn = con_local,
                        name = "median_race_time",
                        value = median_time,
                        row.names = FALSE,
                        overwrite = FALSE,
                        append = TRUE)
-          dbWriteTable(conn = con,
+          dbWriteTable(conn = con_local,
                        name = "race_url",
                        value = race_url,
                        row.names = FALSE,
@@ -297,5 +291,6 @@ fiscrape <- function(...){
     }
     
     }
-  dbDisconnect(con)
+  dbDisconnect(con_local)
+  dbDisconnect(con_remote)
 }
