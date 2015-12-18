@@ -25,7 +25,7 @@ fiscrape <- function(...){
                               which = 2))
         cat("\nDownload time:\n")
         print(download_time)
-        browser()
+        #browser()
         #tbls <- plyr::colwise(function(x) {stringr::str_trim(gsub("Â","",x))})(tbls)
         tbls[] <- lapply(tbls,function(x) {stringr::str_trim(gsub("Â","",x))})
         if ("Rank" %ni% colnames(tbls)){
