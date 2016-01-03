@@ -49,7 +49,7 @@ fiscrape <- function(...){
         }
         if (any(grepl('FIS Points Time',colnames(tbls)))){
           tbls$Time <- NULL
-          colnames(tbls)[grepl('FIS Points Time')] <- 'Time'
+          colnames(tbls)[grepl('FIS Points Time',colnames(tbls))] <- 'Time'
           #tbls <- plyr::rename(tbls,c('FIS Points Time' = 'Time'))
           rerank <- TRUE
         }
