@@ -2,7 +2,7 @@
 % Please edit documentation in R/delete_race.R
 \name{delete_race}
 \alias{delete_race}
-\title{Delete Race from Dataase}
+\title{Delete Race from Database}
 \usage{
 delete_race(raceid = NULL)
 }
