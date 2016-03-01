@@ -1,4 +1,4 @@
-#' Delete Race from Dataase
+#' Delete Race from Database
 #' 
 #' Delete race data from both remote and local
 #' databases from main, race_url and median_race_time
@@ -50,7 +50,7 @@ update_race <- function(raceid,...){
   }
   changes <- lapply(changes,function(x) if (is.character(x)) {paste0("'",x,"'")} else {x})
   set_clause <- paste(names(changes),changes,sep = " = ",collapse = ", ")
-  cat("with the following changes:")
+  cat("with the following changes:\n")
   print(set_clause)
   choice <- menu(choices = c("Abort","Continue"),title = "Choose one")
   if (choice <= 1){
@@ -59,6 +59,42 @@ update_race <- function(raceid,...){
   }else{
     ss_query(conr,sprintf("update main set %s where raceid = %s",set_clause,raceid))
     ss_query(conl,sprintf("update main set %s where raceid = %s",set_clause,raceid))
+  }
+  dbDisconnect(conl)
+  dbDisconnect(conr)
+}
+
+#' Update Person Info
+#'
+#' Update race info in both remote and local
+#' databases for a specified raceid.
+#'
+#' @param fisid integer
+#' @param ... named changes, e.g. \code{length = 30} or \code{cat1 = "WC"}
+#' @export
+update_person <- function(target_fisid,...){
+  conr <- db_xc_remote()
+  conl <- db_xc_local()
+  person <- ss_query(conl,
+                     sprintf("select distinct fisid,name,gender,yob,nation from main where fisid = '%s'",
+                             target_fisid))
+  cat("Preparing to update the following person:\n")
+  print(person)
+  changes <- list(...)
+  if (length(changes) == 0){
+    stop("No changes specified.")
+  }
+  changes <- lapply(changes,function(x) if (is.character(x)) {paste0("'",x,"'")} else {x})
+  set_clause <- paste(names(changes),changes,sep = " = ",collapse = ", ")
+  cat("with the following changes:\n")
+  print(set_clause)
+  choice <- menu(choices = c("Abort","Continue"),title = "Choose one")
+  if (choice <= 1){
+    cat("\nExiting and doing nothing...")
+    return(NULL)
+  }else{
+    ss_query(conr,sprintf("update main set %s where fisid = '%s'",set_clause,target_fisid))
+    ss_query(conl,sprintf("update main set %s where fisid = '%s'",set_clause,target_fisid))
   }
   dbDisconnect(conl)
   dbDisconnect(conr)
