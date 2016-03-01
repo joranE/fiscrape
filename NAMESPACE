@@ -2,6 +2,7 @@
 
 export(delete_race)
 export(fiscrape)
+export(update_person)
 export(update_race)
 import(DBI)
 import(RMySQL)
