@@ -48,11 +48,18 @@ dst_scrape <- function(url,raceInfo){
     page_tbl[["(Rk.)"]] <- NULL
   }
   
+  if ("FIS Code" %in% colnames(page_tbl)){
+    page_tbl <- page_tbl %>%
+      rename(fisid = `FIS Code`)
+  }else{
+    page_tbl$fisid <- NA_character_
+  }
+  
   #Final packaging
   page_tbl <- page_tbl %>%
     filter(grepl("[0-9]",stringr::str_trim(Rank))) %>%
     rename(fispoints = `FIS Points`) %>%
-    select(Rank,Name,Year,Nation,Time,fispoints) %>%
+    select(Rank,fisid,Name,Year,Nation,Time,fispoints) %>%
     mutate(Rank = as.integer(stringr::str_trim(Rank)),
            Name = stringr::str_trim(Name),
            Year = as.integer(Year),
@@ -66,7 +73,6 @@ dst_scrape <- function(url,raceInfo){
            nation = Nation,
            time = Time) %>%
     mutate(compid = compids[1:n()],
-           fisid = NA_character_,
            raceid = getMaxRaceID() + 1,
            date = raceInfo[["date"]],
            season = raceInfo[["season"]],
@@ -82,10 +88,11 @@ dst_scrape <- function(url,raceInfo){
            rankqual = NA_integer_,
            time = convertTime(time,raceInfo[["type"]])) %>%
     select(raceid,date,season,location,gender,length,tech,
-           type,start,cat1,cat2,compid,fisid,name,yob,age,
-           nation,rank,rankqual,time,fispoints)
+           type,start,cat1,cat2,fisid,name,yob,age,
+           nation,rank,rankqual,time,fispoints,compid)
   
   #Space for name check
+  page_tbl <- check_names(page_tbl)
   
   #Age sanity check
   page_tbl <- page_tbl %>%

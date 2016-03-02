@@ -64,7 +64,5 @@ combine_qual_final <- function(qual,final){
     left_join(final[,c('compid','rank')],by = 'compid')
   result <- result[,cn]
   
-  #Space for name check
-  
   result
 }
