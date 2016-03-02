@@ -70,61 +70,61 @@ fiscrape <- function(...){
       }else{
         cat("\nUploading...\n")
         #Remote upload
-        check <- dbWriteTable(conn = con_remote,
-                              name = "main",
-                              value = tbls, 
-                              row.names = FALSE, 
-                              overwrite = FALSE, 
-                              append = TRUE)
+        check <- RMySQL::dbWriteTable(conn = con_remote,
+                                      name = "main",
+                                      value = tbls, 
+                                      row.names = FALSE, 
+                                      overwrite = FALSE, 
+                                      append = TRUE)
         if (!check){
           stop("Remote upload to main failed.")
         }
         
-        check <- dbWriteTable(conn = con_remote,
-                              name = "median_race_time",
-                              value = median_time,
-                              row.names = FALSE,
-                              overwrite = FALSE,
-                              append = TRUE)
+        check <- RMySQL::dbWriteTable(conn = con_remote,
+                                      name = "median_race_time",
+                                      value = median_time,
+                                      row.names = FALSE,
+                                      overwrite = FALSE,
+                                      append = TRUE)
         if (!check){
           stop("Remote upload to median_race_time failed.")
         }
         
-        check <- dbWriteTable(conn = con_remote,
-                              name = "race_url",
-                              value = race_url,
-                              row.names = FALSE,
-                              overwrite = FALSE,
-                              append = TRUE)
+        check <- RMySQL::dbWriteTable(conn = con_remote,
+                                      name = "race_url",
+                                      value = race_url,
+                                      row.names = FALSE,
+                                      overwrite = FALSE,
+                                      append = TRUE)
         if (!check){
           stop("Remote upload to race_url failed.")
         }
         
         #Local upload
-        check <- dbWriteTable(conn = con_local,
-                              name = "main",
-                              value = tbls,
-                              row.names = FALSE,
-                              overwrite = FALSE,
-                              append = TRUE)
+        check <- RSQLite::dbWriteTable(conn = con_local,
+                                       name = "main",
+                                       value = tbls,
+                                       row.names = FALSE,
+                                       overwrite = FALSE,
+                                       append = TRUE)
         if (!check){
           stop("Local upload to main failed.")
         }
-        check <- dbWriteTable(conn = con_local,
-                              name = "median_race_time",
-                              value = median_time,
-                              row.names = FALSE,
-                              overwrite = FALSE,
-                              append = TRUE)
+        check <- RSQLite::dbWriteTable(conn = con_local,
+                                       name = "median_race_time",
+                                       value = median_time,
+                                       row.names = FALSE,
+                                       overwrite = FALSE,
+                                       append = TRUE)
         if (!check){
           stop("Local upload to median_race_time failed.")
         }
-        check <- dbWriteTable(conn = con_local,
-                              name = "race_url",
-                              value = race_url,
-                              row.names = FALSE,
-                              overwrite = FALSE,
-                              append = TRUE)
+        check <- RSQLite::dbWriteTable(conn = con_local,
+                                       name = "race_url",
+                                       value = race_url,
+                                       row.names = FALSE,
+                                       overwrite = FALSE,
+                                       append = TRUE)
         if (!check){
           stop("Local upload to race_url failed.")
         }
