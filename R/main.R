@@ -25,14 +25,22 @@ fiscrape <- function(...){
       if (raceInfo$type == 'Distance'){
         tbls <- dst_scrape(url = raceInfo$url,
                            raceInfo = raceInfo)
+        race_url <- data.frame(raceid = tbls$raceid[1],
+                               url1 = raceInfo$url,
+                               url2 = NA)
         print(head(tbls))
+        print(tail(tbls))
       }
       
       #Scrape stage race
       if (raceInfo$type == 'Stage'){
         tbls <- stage_scrape(url = raceInfo$url,
                              raceInfo = raceInfo)
+        race_url <- data.frame(raceid = tbls$raceid[1],
+                               url1 = raceInfo$url,
+                               url2 = NA)
         print(head(tbls))
+        print(tail(tbls))
       }
       
       #Scrape stage race
@@ -43,8 +51,15 @@ fiscrape <- function(...){
         final <- spr_final_scrape(url = raceInfo$url$final)
         tbls <- combine_qual_final(qual = qual,
                                    final = final)
+        race_url <- data.frame(raceid = tbls$raceid[1],
+                               url1 = raceInfo$url$qual,
+                               url2 = raceInfo$url$final)
         print(head(tbls))
+        print(tail(tbls))
       }
+      
+      median_time <- data.frame(raceid = tbls$raceid[1],
+                                median_time = median(tbls$time,na.rm = TRUE))
       
       #Final check
       cat("\nDoes this look correct?")
@@ -54,51 +69,64 @@ fiscrape <- function(...){
         next
       }else{
         cat("\nUploading...\n")
+        #Remote upload
         check <- dbWriteTable(conn = con_remote,
                               name = "main",
                               value = tbls, 
                               row.names = FALSE, 
                               overwrite = FALSE, 
                               append = TRUE)
-        median_time <- data.frame(raceid = tbls$raceid[1],
-                                  median_time = median(tbls$time,na.rm = TRUE))
-        dbWriteTable(conn = con_remote,
-                     name = "median_race_time",
-                     value = median_time,
-                     row.names = FALSE,
-                     overwrite = FALSE,
-                     append = TRUE)
-        race_url <- data.frame(raceid = tbls$raceid[1],url1 = raceInfo$url,url2 = NA)
-        dbWriteTable(conn = con_remote,
-                     name = "race_url",
-                     value = race_url,
-                     row.names = FALSE,
-                     overwrite = FALSE,
-                     append = TRUE)
         if (!check){
-          stop("Remote upload failed.")
+          stop("Remote upload to main failed.")
         }
-        sql <- "insert into main (raceid,date,season,location,
-        gender,length,tech,type,start,
-        cat1,cat2,compid,fisid,name,yob,age,nation,
-        rank,rankqual,time,fispoints) 
-        values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
-        bulk_insert(con_local,sql,tbls)
+        
+        check <- dbWriteTable(conn = con_remote,
+                              name = "median_race_time",
+                              value = median_time,
+                              row.names = FALSE,
+                              overwrite = FALSE,
+                              append = TRUE)
+        if (!check){
+          stop("Remote upload to median_race_time failed.")
+        }
+        
+        check <- dbWriteTable(conn = con_remote,
+                              name = "race_url",
+                              value = race_url,
+                              row.names = FALSE,
+                              overwrite = FALSE,
+                              append = TRUE)
+        if (!check){
+          stop("Remote upload to race_url failed.")
+        }
+        
+        #Local upload
+        check <- dbWriteTable(conn = con_local,
+                              name = "main",
+                              value = tbls,
+                              row.names = FALSE,
+                              overwrite = FALSE,
+                              append = TRUE)
+        if (!check){
+          stop("Local upload to main failed.")
+        }
         check <- dbWriteTable(conn = con_local,
                               name = "median_race_time",
                               value = median_time,
                               row.names = FALSE,
                               overwrite = FALSE,
                               append = TRUE)
-        dbWriteTable(conn = con_local,
-                     name = "race_url",
-                     value = race_url,
-                     row.names = FALSE,
-                     overwrite = FALSE,
-                     append = TRUE)
-        
         if (!check){
-          stop("Local upload failed.")
+          stop("Local upload to median_race_time failed.")
+        }
+        check <- dbWriteTable(conn = con_local,
+                              name = "race_url",
+                              value = race_url,
+                              row.names = FALSE,
+                              overwrite = FALSE,
+                              append = TRUE)
+        if (!check){
+          stop("Local upload to race_url failed.")
         }
       }
     }
