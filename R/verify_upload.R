@@ -1,4 +1,4 @@
-verifyUpload <- function(tbls){
+verify_upload <- function(tbls){
   con_local <- db_xc_local()
   con_remote <- db_xc_remote()
   raceid <- tbls$raceid[1]
@@ -8,8 +8,7 @@ verifyUpload <- function(tbls){
   dbDisconnect(con_remote)
   if (nrow(test_local) == nrow(tbls) && nrow(test_remote) == nrow(tbls)){
     cat("\nUpload successful!\n")
-  }
-  else{
+  }else{
     cat("\nUpload failed!\n")
   }
 }

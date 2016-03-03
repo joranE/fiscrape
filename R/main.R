@@ -129,6 +129,8 @@ fiscrape <- function(...){
           stop("Local upload to race_url failed.")
         }
       }
+      
+      verify_upload(tbls)
     }
   }
       
