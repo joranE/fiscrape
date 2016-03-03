@@ -72,7 +72,7 @@ dst_scrape <- function(url,raceInfo){
            yob = Year,
            nation = Nation,
            time = Time) %>%
-    mutate(compid = compids[1:n()],
+    mutate(compid = as.integer(compids[1:n()]),
            raceid = getMaxRaceID() + 1,
            date = raceInfo[["date"]],
            season = raceInfo[["season"]],
