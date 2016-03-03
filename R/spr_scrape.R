@@ -51,7 +51,7 @@ spr_final_scrape <- function(url){
            name = Name,
            yob = Year,
            nation = Nation) %>%
-    mutate(compid = compids[1:n()]) %>%
+    mutate(compid = as.integer(compids[1:n()])) %>%
     select(compid,name,yob,nation,rank)
   
   page_tbl
