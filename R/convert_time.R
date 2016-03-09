@@ -14,9 +14,9 @@ convertTime <- function(x,raceType){
     if (as.numeric(t[1]) == 0){t <- t[-1]}
     n <- length(t)
     ind <- NA
-    if (raceType != 'Stage' & n == 3 & as.integer(t[1]) > 4){
-      ind <- c(0.01,1,60)
-    }
+    #if (raceType != 'Stage' & n == 3 & as.integer(t[1]) > 4){
+    #  ind <- c(0.01,1,60)
+    #}
     if (raceType == 'Sprint' & n == 3){
       ind <- c(0.01,1,60)
     }
