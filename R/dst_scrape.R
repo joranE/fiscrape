@@ -55,10 +55,16 @@ dst_scrape <- function(url,raceInfo){
     page_tbl$fisid <- NA_character_
   }
   
+  if ("FIS Points" %in% colnames(page_tbl)){
+    page_tbl <- page_tbl %>%
+      rename(fispoints = `FIS Points`)
+  }else{
+    page_tbl$fispoints <- NA_real_
+  }
+  
   #Final packaging
   page_tbl <- page_tbl %>%
     filter(grepl("[0-9]",stringr::str_trim(Rank))) %>%
-    rename(fispoints = `FIS Points`) %>%
     select(Rank,fisid,Name,Year,Nation,Time,fispoints) %>%
     mutate(Rank = as.integer(stringr::str_trim(Rank)),
            Name = stringr::str_trim(Name),
