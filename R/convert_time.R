@@ -36,23 +36,39 @@ convertTime <- function(x,raceType){
 #' @importFrom lubridate period_to_seconds
 convert_time <- function(times){
   #Intended to catch "MM:SS.S" or "HH:MM:SS.S" formats
-  pat <- "^([0-9]{1,2}:){1,2}([0-9]{2}\\.[0-9]{1})$"
+  pat <- "^([0-9]{1,2}:){1,2}([0-9]{2}){1}(\\.[0-9]+)?$"
   format_ok <- grepl(pattern = pat,x = times)
   
-  if (!all(format_ok)){
-    #Show what the times look like and have user specify format...?
+  #Attempt to clean up bad formats
+  attempts <- 0
+  while (any(!format_ok)){
     n_bad <- sum(!format_ok)
     cat(n_bad,"out of",length(times),"race times have an unusual format:\n")
     print(times[!format_ok])
-    stop("Bad times need to be fixed.")
-  }else{
-    #Convert as usual
-    one_colon <- stringr::str_count(times,":") == 1
-    if (any(one_colon)){
-      times[one_colon] <- paste0("00:",times[one_colon])
+    parser_fun <- parse_fun()
+    times[!format_ok] <- parser_fun(times[!format_ok])
+    format_ok <- grepl(pattern = pat,x = times)
+    if (attempts > 0){
+      choice <- menu(choices = c("Try again","Abort"))
+      if (choice == 2){
+        stop("Aborting...")
+      }
     }
-    
-    secs <- lubridate::period_to_seconds(lubridate::hms(times))
+    attempts <- attempts + 1
   }
+  
+  #Now everything should be ok to convert...
+  one_colon <- stringr::str_count(times,":") == 1
+  if (any(one_colon)){
+    times[one_colon] <- paste0("00:",times[one_colon])
+  }
+  
+  secs <- lubridate::period_to_seconds(lubridate::hms(times))
+  
   secs
+}
+
+parse_fun <- function(){
+  FUN <- readline(prompt = "Enter function to do further parsing: ")
+  eval(parse(text = FUN))
 }
