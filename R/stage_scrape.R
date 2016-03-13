@@ -1,4 +1,4 @@
-strage_scrape <- function(url,raceInfo){
+stage_scrape <- function(url,raceInfo){
   #Load html
   page <- xml2::read_html(x = url)
   
