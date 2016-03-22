@@ -28,8 +28,13 @@ fiscrape <- function(...){
         race_url <- data.frame(raceid = tbls$raceid[1],
                                url1 = raceInfo$url,
                                url2 = NA)
-        print(head(tbls))
-        print(tail(tbls))
+        
+        if (nrow(tbls) > 12){
+          print(head(tbls))
+          print(tail(tbls))
+        }else{
+          print(tbls)
+        }
       }
       
       #Scrape stage race
@@ -39,8 +44,12 @@ fiscrape <- function(...){
         race_url <- data.frame(raceid = tbls$raceid[1],
                                url1 = raceInfo$url,
                                url2 = NA)
-        print(head(tbls))
-        print(tail(tbls))
+        if (nrow(tbls) > 12){
+          print(head(tbls))
+          print(tail(tbls))
+        }else{
+          print(tbls)
+        }
       }
       
       #Scrape stage race
@@ -54,8 +63,12 @@ fiscrape <- function(...){
         race_url <- data.frame(raceid = tbls$raceid[1],
                                url1 = raceInfo$url$qual,
                                url2 = raceInfo$url$final)
-        print(head(tbls))
-        print(tail(tbls))
+        if (nrow(tbls) > 12){
+          print(head(tbls))
+          print(tail(tbls))
+        }else{
+          print(tbls)
+        }
       }
       
       median_time <- data.frame(raceid = tbls$raceid[1],
