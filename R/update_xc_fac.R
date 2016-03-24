@@ -1,3 +1,11 @@
+#' Create Updated Version of XC_FAC
+#' 
+#' Creates an updated version of xc_fac used for
+#' standardizing median percent back by gender and
+#' race type.
+#' 
+#' @export
+#' @return A data frame
 update_xc_fac <- function(){
   results <- tbl(src = options()$statskier_src,"maj_int") %>%
     select(raceid,date,season,gender,start,rank,time) %>%
