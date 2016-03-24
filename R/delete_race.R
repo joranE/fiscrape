@@ -8,9 +8,9 @@
 #' @param raceid integer
 #' @export
 delete_race <- function(raceid = NULL){
- conr <- db_xc_remote()
- conl <- db_xc_local()
- race <- ss_query(conl,sprintf("select * from main where raceid = %s",raceid))
+ conr <- statskier2::db_xc_remote()
+ conl <- statskier2::db_xc_local()
+ race <- statskier2::ss_query(conl,sprintf("select * from main where raceid = %s",raceid))
  cat("Preparing to delete the following race:\n")
  print(race[1,c('raceid','date','season','location','gender','length','tech','type','start','cat1','cat2')])
  choice <- menu(choices = c("Abort","Continue"),title = "Choose one")
@@ -18,13 +18,13 @@ delete_race <- function(raceid = NULL){
    cat("\nExiting and doing nothing...")
    return(NULL)
  }else{
-   ss_query(conr,sprintf("delete from main where raceid = %s",raceid))
-   ss_query(conr,sprintf("delete from race_url where raceid = %s",raceid))
-   ss_query(conr,sprintf("delete from median_race_time where raceid = %s",raceid))
+   statskier2::ss_query(conr,sprintf("delete from main where raceid = %s",raceid))
+   statskier2::ss_query(conr,sprintf("delete from race_url where raceid = %s",raceid))
+   statskier2::ss_query(conr,sprintf("delete from median_race_time where raceid = %s",raceid))
    
-   ss_query(conl,sprintf("delete from main where raceid = %s",raceid))
-   ss_query(conl,sprintf("delete from race_url where raceid = %s",raceid))
-   ss_query(conl,sprintf("delete from median_race_time where raceid = %s",raceid))
+   statskier2::ss_query(conl,sprintf("delete from main where raceid = %s",raceid))
+   statskier2::ss_query(conl,sprintf("delete from race_url where raceid = %s",raceid))
+   statskier2::ss_query(conl,sprintf("delete from median_race_time where raceid = %s",raceid))
  }
  dbDisconnect(conl)
  dbDisconnect(conr)
@@ -39,9 +39,9 @@ delete_race <- function(raceid = NULL){
 #' @param ... named changes, e.g. \code{length = 30} or \code{cat1 = "WC"}
 #' @export
 update_race <- function(raceid,...){
-  conr <- db_xc_remote()
-  conl <- db_xc_local()
-  race <- ss_query(conl,sprintf("select * from main where raceid = %s",raceid))
+  conr <- statskier2::db_xc_remote()
+  conl <- statskier2::db_xc_local()
+  race <- statskier2::ss_query(conl,sprintf("select * from main where raceid = %s",raceid))
   cat("Preparing to update the following race:\n")
   print(race[1,c('raceid','date','season','location','gender','length','tech','type','start','cat1','cat2')])
   changes <- list(...)
@@ -57,8 +57,8 @@ update_race <- function(raceid,...){
     cat("\nExiting and doing nothing...")
     return(NULL)
   }else{
-    ss_query(conr,sprintf("update main set %s where raceid = %s",set_clause,raceid))
-    ss_query(conl,sprintf("update main set %s where raceid = %s",set_clause,raceid))
+    statskier2::ss_query(conr,sprintf("update main set %s where raceid = %s",set_clause,raceid))
+    statskier2::ss_query(conl,sprintf("update main set %s where raceid = %s",set_clause,raceid))
   }
   dbDisconnect(conl)
   dbDisconnect(conr)
@@ -73,9 +73,9 @@ update_race <- function(raceid,...){
 #' @param ... named changes, e.g. \code{length = 30} or \code{cat1 = "WC"}
 #' @export
 update_person <- function(target_fisid,...){
-  conr <- db_xc_remote()
-  conl <- db_xc_local()
-  person <- ss_query(conl,
+  conr <- statskier2::db_xc_remote()
+  conl <- statskier2::db_xc_local()
+  person <- statskier2::ss_query(conl,
                      sprintf("select distinct fisid,name,gender,yob,nation from main where fisid = '%s'",
                              target_fisid))
   cat("Preparing to update the following person:\n")
@@ -93,8 +93,8 @@ update_person <- function(target_fisid,...){
     cat("\nExiting and doing nothing...")
     return(NULL)
   }else{
-    ss_query(conr,sprintf("update main set %s where fisid = '%s'",set_clause,target_fisid))
-    ss_query(conl,sprintf("update main set %s where fisid = '%s'",set_clause,target_fisid))
+    statskier2::ss_query(conr,sprintf("update main set %s where fisid = '%s'",set_clause,target_fisid))
+    statskier2::ss_query(conl,sprintf("update main set %s where fisid = '%s'",set_clause,target_fisid))
   }
   dbDisconnect(conl)
   dbDisconnect(conr)

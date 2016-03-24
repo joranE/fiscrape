@@ -1,12 +1,12 @@
 check_names <- function(race){
-  con_local <- db_xc_local()
+  con_local <- statskier2::db_xc_local()
   q_fisid <- "select fisid,name,count(distinct raceid) n 
               from main where fisid in %s group by fisid,name"
   q_compid <- "select compid,name,count(distinct raceid) n 
                from main where compid in %s group by compid,name"
   if (all(!is.na(race$fisid))){
     fisids <- paste_in(race$fisid)
-    res <- ss_query(con_local,sprintf(q_fisid,fisids))
+    res <- statskier2::ss_query(con_local,sprintf(q_fisid,fisids))
     
     res <- res %>%
       group_by(fisid) %>%
@@ -18,7 +18,7 @@ check_names <- function(race){
   }else{
     if (all(!is.na(race$compid))){
       compids <- paste_in(race$compid)
-      res <- ss_query(con_local,sprintf(q_compid,compids))
+      res <- statskier2::ss_query(con_local,sprintf(q_compid,compids))
       
       res <- res %>%
         group_by(compid) %>%

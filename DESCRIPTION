@@ -2,13 +2,15 @@ Package: fiscrape
 Type: Package
 Title: Screen scraper for FIS XC races
 Version: 1.0
-Depends:
-    DBI,
-    RMySQL
 Imports:
-    XML,
-    plyr,
-    stringr
+    DBI,
+    RSQLite,
+    RMySQL,
+    rvest,
+    xml2,
+    dplyr,
+    stringr,
+    statskier2
 Date: 2015-07-02
 Author: Joran Elias
 Maintainer: Joran Elias <statisticalskier@gmail.com>

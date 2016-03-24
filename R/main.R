@@ -6,8 +6,8 @@
 #' @export
 fiscrape <- function(...){
   #DB Connections
-  con_remote <- db_xc_remote()
-  con_local <- db_xc_local()
+  con_remote <- statskier2::db_xc_remote()
+  con_local <- statskier2::db_xc_local()
   
   #Main loop
   while(TRUE){
