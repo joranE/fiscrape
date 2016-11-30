@@ -114,18 +114,19 @@ fiscrape <- function(...){
         }
         
         #Local upload
-        sql <- sprintf("insert into main %s",paste_in(colnames(tbls),quote = FALSE))
-        sql <- paste(sql,"values",paste_in(rep("?",ncol(tbls)),quote = FALSE))
-        bulk_insert(cn = con_local,sql = sql,data = tbls)
-#         check <- RSQLite::dbWriteTable(conn = con_local,
-#                                        name = "main",
-#                                        value = tbls,
-#                                        row.names = FALSE,
-#                                        overwrite = FALSE,
-#                                        append = TRUE)
-#         if (!check){
-#           stop("Local upload to main failed.")
-#         }
+        # sql <- sprintf("insert into main %s",paste_in(colnames(tbls),quote = FALSE))
+        # sql <- paste(sql,"values",paste_in(rep("?",ncol(tbls)),quote = FALSE))
+        # bulk_insert(cn = con_local,sql = sql,data = tbls)
+        #Might be able to use this upon next RSQLite release after 1.0.0
+        check <- RSQLite::dbWriteTable(conn = con_local,
+                                       name = "main",
+                                       value = tbls,
+                                       row.names = FALSE,
+                                       overwrite = FALSE,
+                                       append = TRUE)
+        if (!check){
+          stop("Local upload to main failed.")
+        }
         check <- RSQLite::dbWriteTable(conn = con_local,
                                        name = "median_race_time",
                                        value = median_time,
