@@ -4,9 +4,11 @@
 #' standardizing median percent back by gender and
 #' race type.
 #' 
+#' @param uload_result boolean; should resulting table be loading into
+#' local and remote DBs, overwriting the previous version
 #' @export
 #' @return A data frame
-update_xc_fac <- function(){
+update_xc_fac <- function(upload_result = FALSE){
   results <- tbl(src = options()$statskier_src,"maj_int") %>%
     select(raceid,date,season,type,gender,start,rank,time) %>%
     filter(type == 'Distance') %>%
@@ -40,7 +42,29 @@ update_xc_fac <- function(){
   to_append <- filter(XC_FAC,season == max(season))
   to_append$season <- new_season
   
-  bind_rows(XC_FAC,to_append)
+  result <- bind_rows(XC_FAC,to_append) %>%
+    ungroup()
+  
+  if (upload_result){
+    #DB Connections
+    con_remote <- statskier2::db_xc_remote()
+    con_local <- statskier2::db_xc_local()
+    
+    local_check <- RSQLite::dbWriteTable(conn = con_local,name = "xc_fac",
+                                value = result,overwrite = TRUE,row.names = FALSE)
+    remote_check <- RMySQL::dbWriteTable(conn = con_remote,name = "xc_fac",
+                                 value = result,overwrite = TRUE,row.names = FALSE)
+    
+    dbDisconnect(con_local)
+    dbDisconnect(con_remote)
+    
+    if (!local_check | !remote_check){
+      stop("Upload failed for one or both DBs.")
+    }
+    invisible(result)
+  }else{
+    return(result)
+  }
 }
 
 conv_factor <- function(x)
