@@ -89,4 +89,6 @@ append_race <- function(race_data,url1 = NA,url2 = NA){
 
   verify_upload(race_data)
   
+  dbDisconnect(con_local)
+  dbDisconnect(con_remote)
 }
