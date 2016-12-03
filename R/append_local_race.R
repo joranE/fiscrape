@@ -3,7 +3,7 @@ append_race <- function(race_data,url1 = NA,url2 = NA){
   con_remote <- statskier2::db_xc_remote()
   con_local <- statskier2::db_xc_local()
   
-  new_raceid <- get_max_raceid()
+  new_raceid <- get_max_raceid() + 1
   
   if (any(is.na(race_data$fisid))){
     race_data <- split(race_data,is.na(race_data$fisid))
