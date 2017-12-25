@@ -52,12 +52,18 @@ fiscrape <- function(...){
         }
       }
       
-      #Scrape stage race
+      #Scrape sprint race
       if (raceInfo$type == 'Sprint'){
         #browser()
-        qual <- spr_qual_scrape(url = raceInfo$url$qual,
-                                raceInfo = raceInfo)
-        final <- spr_final_scrape(url = raceInfo$url$final)
+        if (!is.na(raceInfo$url$qual)){
+          qual <- spr_qual_scrape(url = raceInfo$url$qual,
+                                  raceInfo = raceInfo)
+          final <- qual[integer(0),]
+        }
+        if (!is.na(raceInfo$url$final)){
+          final <- spr_final_scrape(url = raceInfo$url$final)
+        }
+        
         tbls <- combine_qual_final(qual = qual,
                                    final = final)
         race_url <- data.frame(raceid = tbls$raceid[1],
