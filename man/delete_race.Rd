@@ -15,4 +15,3 @@ databases from main, race_url and median_race_time
 tables all in one go. Useful for when FIS fucks up the
 results and you need to start over.
 }
-

@@ -12,4 +12,3 @@ fiscrape(...)
 \description{
 The main function
 }
-
