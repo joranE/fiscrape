@@ -15,4 +15,3 @@ update_race(raceid, ...)
 Update race info in both remote and local
 databases for a specified raceid.
 }
-

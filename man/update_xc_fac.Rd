@@ -4,7 +4,11 @@
 \alias{update_xc_fac}
 \title{Create Updated Version of XC_FAC}
 \usage{
-update_xc_fac()
+update_xc_fac(upload_result = FALSE)
+}
+\arguments{
+\item{uload_result}{boolean; should resulting table be loading into
+local and remote DBs, overwriting the previous version}
 }
 \value{
 A data frame
@@ -14,4 +18,3 @@ Creates an updated version of xc_fac used for
 standardizing median percent back by gender and
 race type.
 }
-

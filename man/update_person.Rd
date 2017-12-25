@@ -4,15 +4,18 @@
 \alias{update_person}
 \title{Update Person Info}
 \usage{
-update_person(target_fisid, ...)
+update_person(target_gender, target_compid, target_fisid, ...)
 }
 \arguments{
-\item{...}{named changes, e.g. \code{length = 30} or \code{cat1 = "WC"}}
+\item{target_gender}{character}
 
-\item{fisid}{integer}
+\item{target_compid}{integer}
+
+\item{target_fisid}{character}
+
+\item{...}{named changes, e.g. \code{length = 30} or \code{cat1 = "WC"}}
 }
 \description{
 Update race info in both remote and local
 databases for a specified raceid.
 }
-
