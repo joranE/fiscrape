@@ -11,46 +11,39 @@ spr_final_scrape <- function(url){
   
   #Get competitor ids
   compids <- page %>% 
-    html_nodes(xpath = "//a[contains(@href,'biography')]/@href") %>% 
-    html_text() %>%
+    html_nodes(xpath = "//*[contains(@data-link,'athlete-biography')]") %>% 
+    html_attrs() %>%
+    map(.x = .,.f = magrittr::extract2,"data-link") %>%
     stringr::str_extract("competitorid=[0-9]+") %>%
-    stringr::str_replace("competitorid=","")
+    stringr::str_replace("competitorid=","") %>%
+    trim_compids()
+  
+  if (length(compids) == 0){
+    compids <- page %>% 
+      html_nodes(xpath = "//*[contains(@href,'athlete-biography')]") %>% 
+      html_attrs() %>%
+      map(.x = .,.f = magrittr::extract2,"href") %>%
+      stringr::str_extract("competitorid=[0-9]+") %>%
+      stringr::str_replace("competitorid=","") %>%
+      trim_compids()
+  }
   
   #Extract results table
   page_tbl <- page %>%
-    html_table(header = TRUE,fill = TRUE) %>%
-    magrittr::extract2(2) 
-  page_tbl <- page_tbl[,!is.na(colnames(page_tbl))]
-  
-  if ("Rank" %ni% colnames(page_tbl)){
-    while(TRUE){
-      print(head(page_tbl))
-      cat("\nI don't think this was the right table.\n")
-      selection <- readline(prompt = 'Try table number...')
-      page_tbl <- page %>%
-        html_table(header = TRUE,fill = TRUE) %>%
-        magrittr::extract2(selection)
-      print(head(page_tbl))
-      selection <- menu(c('Yes','No'))
-      if (selection == 1) break
-    }
-  }
-  
-  #Ran into this once, and the check for it lives on...
-  page_tbl[] <- lapply(page_tbl,function(x) {stringr::str_trim(gsub("Â","",x))})
+    html_nodes(css = ".g-row.justify-sb") %>%
+    map(.f = compose(str_trim,html_text,html_children)) %>% 
+    keep(~length(.x) >= 5) %>%
+    get_td_text_spr_final2()
+    #map_dfr(.x = .,.f = compose(get_td_text_spr_final,html_children))
   
   page_tbl <- page_tbl %>%
-    filter(grepl("[0-9]",stringr::str_trim(Rank))) %>%
-    select(Rank,Name,Year,Nation) %>%
-    mutate(Rank = as.integer(stringr::str_trim(Rank)),
-           Name = stringr::str_trim(Name),
-           Year = as.integer(Year),
-           Nation = stringr::str_trim(Nation)) %>%
-    filter(!is.na(Rank)) %>%
-    rename(rank = Rank,
-           name = Name,
-           yob = Year,
-           nation = Nation) %>%
+    filter(grepl("[0-9]",stringr::str_trim(rank))) %>%
+    select(rank,name,yob,nation) %>%
+    mutate(rank = as.integer(stringr::str_trim(rank)),
+           name = stringr::str_trim(name),
+           yob = as.integer(yob),
+           nation = stringr::str_trim(nation)) %>%
+    filter(!is.na(rank)) %>%
     mutate(compid = as.integer(compids[1:n()])) %>%
     select(compid,name,yob,nation,rank)
   
