@@ -20,15 +20,31 @@ dst_scrape <- function(url,raceInfo){
     stringr::str_replace("competitorid=","") %>%
     trim_compids()
   
+  if (length(compids) == 0){
+    compids <- page %>% 
+      html_nodes(xpath = "//*[contains(@href,'athlete-biography')]") %>% 
+      html_attrs() %>%
+      map(.x = .,.f = magrittr::extract2,"href") %>%
+      stringr::str_extract("competitorid=[0-9]+") %>%
+      stringr::str_replace("competitorid=","") %>%
+      trim_compids()
+  }
+  
   #Extract results table
-  if (raceInfo$start == "Handicap"){
+  if (raceInfo$type == "Distance" && raceInfo$start == "Handicap"){
     page_tbl <- page %>%
       html_nodes(css = ".g-row.justify-sb") %>%
-      map_dfr(.x = .,.f = compose(get_td_text_pur,html_children))
+      map(.f = compose(str_trim,html_text,html_children)) %>% 
+      keep(~length(.x) > 5) %>%
+      get_td_text_pur2()
+      #map_dfr(.x = .,.f = compose(get_td_text_pur,html_children))
   } else{
     page_tbl <- page %>%
       html_nodes(css = ".g-row.justify-sb") %>%
-      map_dfr(.x = .,.f = compose(get_td_text_dst,html_children))
+      map(.f = compose(str_trim,html_text,html_children)) %>% 
+      keep(~length(.x) > 5) %>%
+      get_td_text_dst2()
+      #map_dfr(.x = .,.f = compose(get_td_text_dst,html_children))
   }
   
   #Special case for pusuits in stage races
@@ -49,7 +65,7 @@ dst_scrape <- function(url,raceInfo){
            nation = stringr::str_trim(nation),
            time = stringr::str_trim(time),
            fispoints = as.numeric(stringr::str_trim(fispoints))) %>%
-    filter(!is.na(rank)) %>%
+    filter(!is.na(rank) & rank > 0) %>%
     mutate(compid = as.integer(compids[1:n()]),
            raceid = get_max_raceid() + 1,
            date = raceInfo[["date"]],
