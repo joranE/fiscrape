@@ -15,5 +15,6 @@ Date: 2015-07-02
 Author: Joran Elias
 Maintainer: Joran Elias <statisticalskier@gmail.com>
 Description: What you think.
+Encoding: UTF-8
 License: GPL
-RoxygenNote: 6.0.1
+RoxygenNote: 7.0.2
