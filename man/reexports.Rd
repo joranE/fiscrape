@@ -4,16 +4,9 @@
 \name{reexports}
 \alias{reexports}
 \alias{db_xc_local}
-\alias{reexports}
 \alias{db_xc_remote}
-\alias{reexports}
 \alias{ss_query}
 \title{Create Local XC DB Connection}
-\description{
-Create Local XC DB Connection
-
-Create Remote XC DB Connection
-}
 \keyword{internal}
 \description{
 These objects are imported from other packages. Follow the links
