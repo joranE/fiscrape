@@ -13,6 +13,7 @@ dst_scrape <- function(url,race_info){
   page <- xml2::read_html(x = url)
   
   #Two attempts tp get competitor ids
+  # First...
   compids <- page %>% 
     html_nodes(xpath = "//*[contains(@data-link,'athlete-biography')]") %>% 
     html_attrs() %>%
@@ -21,6 +22,7 @@ dst_scrape <- function(url,race_info){
     stringr::str_replace("competitorid=","") %>%
     trim_compids()
   
+  # Second...
   if (length(compids) == 0){
     compids <- page %>% 
       html_nodes(xpath = "//*[contains(@href,'athlete-biography')]") %>% 
@@ -57,9 +59,11 @@ dst_scrape <- function(url,race_info){
     janitor::clean_names(.,case = "snake") %>%
     rename(fisid = fis_code,name = athlete,
            yob = year) %>%
-    rename_at(.vars = vars(matches("fis_points")),.funs = function(x) "fispoints") %>%
+    rename_at(.vars = vars(ends_with("fis_points")),.funs = function(x) "fispoints") %>%
     mutate(rank = as.integer(stringr::str_trim(rank)),
-           notes = NA_character_)
+           notes = NA_character_,
+           raceid = get_max_raceid() + 1,
+           compid = as.integer(compid))
   
   if (any_notes){
     # Add notes about DNS, DNF, DSQ, sanctions, etc.
@@ -83,6 +87,23 @@ dst_scrape <- function(url,race_info){
     }
   }
   
+  #Handle pursuit races with an overall time and a 'FIS points time' for that day
+  # pur_time is the overall, combined time
+  if ("fis_points_time" %in% colnames(race)){
+    race <- race %>%
+      rename(pur_time = time,
+             time = fis_points_time,
+             pur_rank = rank) %>%
+      mutate(rank = as.integer(stringr::str_extract(rk,"[0-9]+")))
+    pur_times <- race %>%
+      select(pur_raceid = as.integer(raceid),
+             pur_compid = compid,
+             pur_time) %>%
+      mutate(pur_time = time_to_seconds(pur_time))
+  } else {
+    pur_times <- NULL
+  }
+  
   #Final packaging
   race <- race %>%
     mutate(name = stringr::str_trim(name),
@@ -90,8 +111,7 @@ dst_scrape <- function(url,race_info){
            nation = stringr::str_trim(nation),
            time = stringr::str_trim(time),
            fispoints = as.numeric(stringr::str_trim(fispoints))) %>%
-    mutate(raceid = get_max_raceid() + 1,
-           date = race_info[["date"]],
+    mutate(date = race_info[["date"]],
            season = race_info[["season"]],
            cat1 = race_info[["cat1"]],
            cat2 = race_info[["cat2"]],
@@ -116,7 +136,8 @@ dst_scrape <- function(url,race_info){
     select(raceid,compid,nation,rank,time,pb,pbm,pbm_sd,fispoints,notes)
   return(list(event = event,
               skier = skier,
-              result = result))
+              result = result,
+              pur_times = pur_times))
 }
 
 row_text_extractor <- function(x){
