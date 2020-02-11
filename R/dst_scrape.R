@@ -7,11 +7,12 @@
 #' @importFrom stringr str_replace
 #' @importFrom stringr str_replace_all
 #' @importFrom magrittr extract2
-dst_scrape <- function(url,raceInfo){
+#' @export
+dst_scrape <- function(url,race_info){
   #Load html
   page <- xml2::read_html(x = url)
   
-  #Get competitor ids
+  #Two attempts tp get competitor ids
   compids <- page %>% 
     html_nodes(xpath = "//*[contains(@data-link,'athlete-biography')]") %>% 
     html_attrs() %>%
@@ -30,67 +31,119 @@ dst_scrape <- function(url,raceInfo){
       trim_compids()
   }
   
-  #Extract results table
-  if (raceInfo$type == "Distance" && raceInfo$start == "Handicap"){
-    page_tbl <- page %>%
-      html_nodes(css = ".g-row.justify-sb") %>%
-      map(.f = compose(str_trim,html_text,html_children)) %>% 
-      keep(~length(.x) > 5) %>%
-      get_td_text_pur2()
-      #map_dfr(.x = .,.f = compose(get_td_text_pur,html_children))
-  } else{
-    page_tbl <- page %>%
-      html_nodes(css = ".g-row.justify-sb") %>%
-      map(.f = compose(str_trim,html_text,html_children)) %>% 
-      keep(~length(.x) > 5) %>%
-      get_td_text_dst2()
-      #map_dfr(.x = .,.f = compose(get_td_text_dst,html_children))
-  }
+  # All rows with sanctions
+  page_tbl <- page %>%
+    html_nodes(css = ".g-row.justify-sb,.g-xs-24.bold,.g-xs-24.container") %>%
+    map(.f = row_text_extractor)
   
-  #Special case for pusuits in stage races
-  if ("fispoints_time" %in% colnames(page_tbl)){
-    page_tbl$time <- page_tbl[["fispoints_time"]]
-    page_tbl[["fispoints_time"]] <- NULL
-    page_tbl$rank <- stringr::str_replace_all(page_tbl[["fispoints_rank"]],"[[:punct:]]","")
-    page_tbl[["fispoints_rank"]] <- NULL
+  #Remove garbarge leading rows, start with row beginning with 'Rank'
+  first_row <- min(which(sapply(page_tbl,function(x) x[1] == "Rank")))
+  page_tbl <- page_tbl[first_row:length(page_tbl)]
+  any_notes <- any(lengths(page_tbl) == 1)
+  
+  # All rows without sanctions
+  race <- page %>%
+    html_nodes(css = ".g-row.justify-sb") %>%
+    map(.f = row_text_extractor)
+  cn <- keep(race,function(x) x[1] == "Rank")[[1]]
+  race <- race %>%
+    keep(~length(.) >= 5) %>%
+    map(.f = function(x) setNames(x,cn[1:length(x)]))
+  race <- race[-1]
+  race <- race %>%
+    setNames(.,compids)
+  race <- bind_rows(!!!race,.id = "compid") %>%
+    select(-Bib) %>%
+    janitor::clean_names(.,case = "snake") %>%
+    rename(fisid = fis_code,name = athlete,
+           yob = year) %>%
+    rename_at(.vars = vars(matches("fis_points")),.funs = function(x) "fispoints") %>%
+    mutate(rank = as.integer(stringr::str_trim(rank)),
+           notes = NA_character_)
+  
+  if (any_notes){
+    # Add notes about DNS, DNF, DSQ, sanctions, etc.
+    first_note <- min(which(lengths(page_tbl) == 1))
+    notes <- page_tbl[first_note:length(page_tbl)]
+    note_compids <- compids[(first_note - 1):length(compids)]
+    
+    #Split notes
+    notes_list <- split(x = notes,f = cumsum(sapply(notes,find_note_headers)))
+    notes_list <- setNames(lapply(notes_list,`[`,-1),lapply(notes_list,`[[`,1))
+    notes_fisids <- lapply(notes_list,find_fisid)
+    
+    #Transfer DNS, DNF, etc info to notes column
+    for (i in names(notes_list)){
+      if (i == 'Sanctions'){
+        sanctions <- sapply(notes_list[[i]][-1],tail,1)
+        race$notes[race$fisid %in% notes_fisids[[i]]] <- sanctions
+      }else {
+        race$notes[race$fisid %in% notes_fisids[[i]]] <- i
+      }
+    }
   }
   
   #Final packaging
-  page_tbl <- page_tbl %>%
-    filter(grepl("[0-9]",stringr::str_trim(rank))) %>%
-    select(rank,fisid,name,yob,nation,time,fispoints) %>%
-    mutate(rank = as.integer(stringr::str_trim(rank)),
-           name = stringr::str_trim(name),
+  race <- race %>%
+    mutate(name = stringr::str_trim(name),
            yob = as.integer(yob),
            nation = stringr::str_trim(nation),
            time = stringr::str_trim(time),
            fispoints = as.numeric(stringr::str_trim(fispoints))) %>%
-    filter(!is.na(rank) & rank > 0) %>%
-    mutate(compid = as.integer(compids[1:n()]),
-           raceid = get_max_raceid() + 1,
-           date = raceInfo[["date"]],
-           season = raceInfo[["season"]],
-           cat1 = raceInfo[["cat1"]],
-           cat2 = raceInfo[["cat2"]],
-           location = raceInfo[["location"]],
-           gender = raceInfo[["gender"]],
-           type = raceInfo[["type"]],
-           start = raceInfo[["start"]],
-           tech = raceInfo[["tech"]],
-           length = raceInfo[["length"]],
-           age = as.integer(substr(raceInfo[["date"]],1,4)) - yob,
-           rankqual = NA_integer_,
-           time = convertTime(time,raceInfo[["type"]])) %>%
-    select(raceid,date,season,location,gender,length,tech,
-           type,start,cat1,cat2,fisid,name,yob,age,
-           nation,rank,rankqual,time,fispoints,compid)
+    mutate(raceid = get_max_raceid() + 1,
+           date = race_info[["date"]],
+           season = race_info[["season"]],
+           cat1 = race_info[["cat1"]],
+           cat2 = race_info[["cat2"]],
+           location = race_info[["location"]],
+           gender = race_info[["gender"]],
+           format = race_info[["format"]],
+           tech = race_info[["tech"]],
+           length = race_info[["length"]],
+           time = time_to_seconds(time)) %>%
+    mutate(pb = (time - min(time,na.rm = TRUE)) / min(time,na.rm = TRUE),
+           pbm = (time - median(time,na.rm = TRUE)) / median(time,na.rm = TRUE),
+           pbm_sd = sd(pbm,na.rm = TRUE),
+           pbm_sd = if_else(is.na(time),NA_real_,pbm_sd))
   
-  #Space for name check
-  page_tbl <- check_names(page_tbl)
-  
-  #Age sanity check
-  page_tbl <- page_tbl %>%
-    mutate(age = ifelse(!is.na(age) & (age < 11 | age > 70),NA_integer_,age))
-  
-  page_tbl
+  skier <- race %>%
+    select(compid,fisid,name,yob) %>%
+    mutate(birth_date = NA_character_)
+  event <- race %>%
+    select(raceid,season,date,location,cat1,cat2,gender,length,format,tech) %>%
+    distinct()
+  result <- race %>%
+    select(raceid,compid,nation,rank,time,pb,pbm,pbm_sd,fispoints,notes)
+  return(list(event = event,
+              skier = skier,
+              result = result))
+}
+
+row_text_extractor <- function(x){
+  cl <- rvest::html_attr(x,"class")
+  if (!cl %in% c("g-row justify-sb","g-xs-24 bold","g-xs-24 container","container g-xs-24")){
+    browser()
+    stop("Encountered unknown row class in html:",cl)
+  }
+  if (cl %in% c("g-row justify-sb")){
+    out <- x %>%
+      html_children() %>%
+      html_text() %>%
+      stringr::str_trim()
+  }
+  if (cl %in% c("g-xs-24 bold","g-xs-24 container","container g-xs-24")){
+    out <- x %>%
+      html_text() %>%
+      stringr::str_trim()
+  }
+  out
+}
+
+find_note_headers <- function(x){
+  length(x) == 1 & grepl("start|finish|^sanction|disqualified",x[1],ignore.case = TRUE)
+}
+
+find_fisid <- function(x){
+  u <- unlist(x)
+  u[grepl("[0-9]{7}",u)]
 }
