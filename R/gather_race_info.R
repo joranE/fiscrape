@@ -21,12 +21,12 @@ gatherRaceInfo <- function(){
     type <- switch(menu(c('Distance','Sprint','Stage')),'Distance','Sprint','Stage')
     
     if (type == 'Distance'){
-      start <- switch(menu(c('Interval','Mass','Pursuit','Handicap')),'Interval','Mass','Pursuit','Handicap')
+      format <- switch(menu(c('Interval','Mass','Skiathlon','Pursuit')),'Interval','Mass','Skiathlon','Pursuit')
     }else{
-      start <- NA
+      format <- NA
     }
     
-    if (start == 'Pursuit' & !is.na(start)){
+    if (format == 'Skiathlon' & !is.na(format)){
       tech <- 'FC'
     }else{
       tech <- switch(menu(c('Freestyle','Classic','Classic/Freestyle')),'F','C','FC')
@@ -65,7 +65,7 @@ gatherRaceInfo <- function(){
                      cat2 = cat2,
                      location = location,
                      type = type,
-                     start = start,
+                     format = format,
                      tech = tech,
                      length = len,
                      date = dt,
@@ -79,7 +79,7 @@ gatherRaceInfo <- function(){
     cat("\nDate      =",raceInfo$date)
     cat("\nGender    =",raceInfo$gender)
     cat("\nType      =",raceInfo$type)
-    cat("\nStart     =",raceInfo$start)
+    cat("\nFormat     =",raceInfo$format)
     cat("\nTechnique =",raceInfo$tech)
     cat("\nLength    =",raceInfo$length)
     

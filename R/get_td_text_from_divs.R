@@ -1,13 +1,3 @@
-get_td_text_dst <- function(x){
-  cn <- c("rank","bib","fisid","name","yob","nation","time","time_back","fispoints")
-  row <- str_trim(html_text(x))
-  if (length(row) == 8) row <- setNames(row,cn[1:8]); row$fispoints <- NA
-  if (length(row) < 8) return(NULL)
-  if (length(row) > length(cn)) row <- row[seq_along(cn)]
-  if (length(row) == length(cn)) row <- setNames(row,cn)
-  as.data.frame(as.list(row),stringsAsFactors = FALSE)
-}
-
 get_td_text_dst2 <- function(x){
   cn_raw <- x[[1]]
   cn <- c("rank","bib","fisid","name","yob","nation","time","time_back","fispoints")
@@ -47,17 +37,6 @@ get_td_text_dst2 <- function(x){
   df
 }
 
-get_td_text_pur <- function(x){
-  cn <- c("rank","bib","fisid","name","yob","nation","time",
-          "time_back","fispoints_time","fispoints_rank","fispoints")
-  row <- str_trim(html_text(x))
-  if (length(row) == 10) row <- setNames(row,cn[1:10]); row$fispoints <- NA
-  if (length(row) < 10) return(NULL)
-  if (length(row) > length(cn)) row <- row[seq_along(cn)]
-  if (length(row) == length(cn)) row <- setNames(row,cn)
-  as.data.frame(as.list(row),stringsAsFactors = FALSE)
-}
-
 get_td_text_pur2 <- function(x){
   cn_raw <- x[[1]]
   cn <- c("rank","bib","fisid","name","yob","nation","time",
@@ -90,15 +69,6 @@ get_td_text_pur2 <- function(x){
   }
   colnames(df) <- cn
   df
-}
-
-get_td_text_spr_final <- function(x){
-  cn <- c("rank","bib","fisid","name","yob","nation")
-  row <- str_trim(html_text(x))
-  if (length(row) < length(cn)) return(NULL)
-  if (length(row) > length(cn)) row <- row[seq_along(cn)]
-  row <- setNames(row,cn)
-  as.data.frame(as.list(row),stringsAsFactors = FALSE)
 }
 
 get_td_text_spr_final2 <- function(x){
@@ -135,19 +105,6 @@ get_td_text_spr_final2 <- function(x){
   
   colnames(df) <- cn
   df
-}
-
-get_td_text_stage <- function(x){
-  cn <- c("rank","fisid","name","yob","nation","time","time_back","fispoints")
-  row <- x %>%
-    html_text() %>%
-    str_trim()
-  if (length(row) < length(cn)) return(NULL)
-  if (length(row) > length(cn)) row <- row[seq_along(cn)]
-  row <- setNames(row,cn)
-  result <- as.data.frame(as.list(row),stringsAsFactors = FALSE)
-  result$time_back[1] <- ""
-  result
 }
 
 get_td_text_stage2 <- function(x){
