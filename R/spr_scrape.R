@@ -3,7 +3,8 @@ spr_qual_scrape <- function(url,race_info){
   #Same as distance case except rename rank to rankqual
   spr_qual_out <- dst_scrape(url = url,race_info = race_info)
   spr_qual_out[["result"]] <- spr_qual_out[["result"]] %>%
-    rename(rankqual = rank)
+    rename(rankqual = rank) %>%
+    mutate(raceid_sq = paste0("SQ",raceid))
   spr_qual_out
 }
 
@@ -88,6 +89,7 @@ spr_final_scrape <- function(url,race_info){
            yob = as.integer(yob),
            nation = stringr::str_trim(nation)) %>%
     mutate(raceid = get_max_raceid() + 1,
+           raceid_sf = paste0("SF",raceid),
            date = race_info[["date"]],
            season = race_info[["season"]],
            cat1 = race_info[["cat1"]],
