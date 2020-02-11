@@ -6,8 +6,8 @@
 #' @export
 fiscrape <- function(...){
   #DB Connections
-  con_remote <- statskier2::db_xc_remote()
-  con_local <- statskier2::db_xc_local()
+  #con_remote <- statskier2::db_xc_remote()
+  #con_local <- statskier2::db_xc_local()
   
   #Main loop
   while(TRUE){
@@ -18,15 +18,15 @@ fiscrape <- function(...){
       break
     }else{
       #Prompt for race info
-      raceInfo <- gatherRaceInfo()
-      raceInfo$season <- getSeason(raceInfo$date)
+      race_info <- gatherRaceInfo()
+      race_info$season <- getSeason(race_info$date)
       
       #Scrape distance race
-      if (raceInfo$type == 'Distance'){
-        tbls <- dst_scrape(url = raceInfo$url,
-                           raceInfo = raceInfo)
+      if (race_info$type == 'Distance'){
+        tbls <- dst_scrape(url = race_info$url,
+                           race_info = race_info)
         race_url <- data.frame(raceid = tbls$raceid[1],
-                               url1 = raceInfo$url,
+                               url1 = race_info$url,
                                url2 = NA)
         
         if (nrow(tbls) > 12){
@@ -38,11 +38,11 @@ fiscrape <- function(...){
       }
       
       #Scrape stage race
-      if (raceInfo$type == 'Stage'){
-        tbls <- stage_scrape(url = raceInfo$url,
-                             raceInfo = raceInfo)
+      if (race_info$type == 'Stage'){
+        tbls <- stage_scrape(url = race_info$url,
+                             race_info = race_info)
         race_url <- data.frame(raceid = tbls$raceid[1],
-                               url1 = raceInfo$url,
+                               url1 = race_info$url,
                                url2 = NA)
         if (nrow(tbls) > 12){
           print(head(tbls))
@@ -53,22 +53,22 @@ fiscrape <- function(...){
       }
       
       #Scrape sprint race
-      if (raceInfo$type == 'Sprint'){
+      if (race_info$type == 'Sprint'){
         #browser()
-        if (!is.na(raceInfo$url$qual)){
-          qual <- spr_qual_scrape(url = raceInfo$url$qual,
-                                  raceInfo = raceInfo)
+        if (!is.na(race_info$url$qual)){
+          qual <- spr_qual_scrape(url = race_info$url$qual,
+                                  race_info = race_info)
           final <- qual[integer(0),]
         }
-        if (!is.na(raceInfo$url$final)){
-          final <- spr_final_scrape(url = raceInfo$url$final)
+        if (!is.na(race_info$url$final)){
+          final <- spr_final_scrape(url = race_info$url$final)
         }
         
         tbls <- combine_qual_final(qual = qual,
                                    final = final)
         race_url <- data.frame(raceid = tbls$raceid[1],
-                               url1 = raceInfo$url$qual,
-                               url2 = raceInfo$url$final)
+                               url1 = race_info$url$qual,
+                               url2 = race_info$url$final)
         if (nrow(tbls) > 12){
           print(head(tbls))
           print(tail(tbls))
