@@ -1,3 +1,6 @@
+library(RSQLite)
+conl <- RSQLite::dbConnect(RSQLite::SQLite(),dbname = "~/Dropbox/new-results-db/output/fis_results_prototype.db")
+src_skier <- tbl(conl,"skier")
 #### Distance Races ####
 #Interval start
 race_info <- list(date = "2020-02-01",
@@ -12,7 +15,7 @@ race_info <- list(date = "2020-02-01",
                   cat2 = NA)
 url <- "https://www.fis-ski.com/DB/general/results.html?sectorcode=CC&raceid=35122"
 
-#fiscrape:::dst_scrape(url = url,raceInfo = race_info)
+#x <- fiscrape:::dst_scrape(url = url,raceInfo = race_info)
 
 #Mass start
 race_info <- list(date = "2020-01-18",
@@ -39,6 +42,19 @@ race_info <- list(date = "2019-12-07",
                   cat1 = "WC",
                   cat2 = NA)
 url <- "https://www.fis-ski.com/DB/general/results.html?sectorcode=CC&raceid=34341"
+
+#Pursuit
+race_info <- list(date = "2020-01-19",
+                  season = "2019-2020",
+                  gender = "Men",
+                  type = "Distance",
+                  location = "CZE",
+                  length = 15,
+                  tech = "C",
+                  format = "Pursuit",
+                  cat1 = "WC",
+                  cat2 = NA)
+url <- "https://www.fis-ski.com/DB/general/results.html?sectorcode=CC&raceid=34394"
 
 #Mass start marathon
 race_info <- list(date = "2020-01-26",
