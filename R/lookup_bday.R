@@ -1,3 +1,4 @@
+#' @export
 lookup_skier_bday <- function(compid){
   skier_profile_url <- "https://www.fis-ski.com/DB/general/athlete-biography.html?sectorcode=CC&competitorid=%s"
   
@@ -31,4 +32,36 @@ lookup_skier_bday <- function(compid){
   }
   
   return(list(yob = .yob,birth_date = .birth_date))
+}
+
+#' @export
+missing_bday <- function(skier_data,conl){
+  src_skier <- tbl(conl,"skier")
+  no_bday <- src_skier %>%
+    filter(compid %in% local(skier_data$compid) & is.na(birth_date)) %>%
+    collect()
+  no_bday
+}
+
+#' @export
+update_bday <- function(skier_list,conl){
+  for (i in seq_len(nrow(skier_list))){
+    bday <- lookup_skier_bday(compid = skier_list$compid[i])
+    if (!is.na(bday$birth_date)){
+      skier_list$birth_date[i] <- bday$birth_date
+    }
+  }
+  skier_list_update <- skier_list %>%
+    filter(!is.na(birth_date))
+  if (nrow(skier_list_update) > 0){
+    for (i in seq_len(nrow(skier_list_update))){
+      compid <- skier_list_update$compid[i]
+      bday <- skier_list_update$birth_date[i]
+      q <- sprintf("update skier set birth_date = '%s' where compid = %s",bday,compid)
+      dbBegin(conl)
+      rs <- dbSendStatement(conl,q)
+      dbClearResult(rs)
+      dbCommit(conl)
+    }
+  }
 }
