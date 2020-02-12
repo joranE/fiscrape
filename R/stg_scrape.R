@@ -1,4 +1,4 @@
-stage_scrape <- function(url,raceInfo){
+stg_scrape <- function(url,event_info){
   #Load html
   page <- xml2::read_html(x = url)
   
@@ -85,15 +85,15 @@ stage_scrape <- function(url,raceInfo){
            time = stringr::str_trim(time),
            fispoints = as.numeric(stringr::str_trim(fispoints))) %>%
     mutate(raceid = get_max_raceid() + 1,
-           date = race_info[["date"]],
-           season = race_info[["season"]],
-           cat1 = race_info[["cat1"]],
-           cat2 = race_info[["cat2"]],
-           location = race_info[["location"]],
-           gender = race_info[["gender"]],
-           format = race_info[["format"]],
-           tech = race_info[["tech"]],
-           length = race_info[["length"]],
+           date = event_info[["date"]],
+           season = event_info[["season"]],
+           cat1 = event_info[["cat1"]],
+           cat2 = event_info[["cat2"]],
+           location = event_info[["location"]],
+           gender = event_info[["gender"]],
+           format = event_info[["format"]],
+           tech = event_info[["tech"]],
+           length = event_info[["length"]],
            time = time_to_seconds(time)) %>%
     mutate(pb = (time - min(time,na.rm = TRUE)) / min(time,na.rm = TRUE),
            pbm = (time - median(time,na.rm = TRUE)) / median(time,na.rm = TRUE),
