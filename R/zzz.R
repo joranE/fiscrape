@@ -1,14 +1,8 @@
 `%ni%` <- Negate(`%in%`)
 
-.onAttach <- function(libname,pkgname){
-  src <- statskier2:::choose_src()
-  options(statskier_src = src)
-  invisible()
-}
+conl <- RSQLite::dbConnect(RSQLite::SQLite(),
+                                   dbname = "~/Dropbox/new-results-db/output/fis_results_prototype.db")
 
 .onDetach <- function(libpath){
-  if (!is.null(options()$statskier_src) && inherits(options()$statskier_src,"src_mysql")){
-    DBI::dbDisconnect(options()$statskier_src$con)
-  }
-  invisible()
+  RSQLite::dbDisconnect(conl)
 }
