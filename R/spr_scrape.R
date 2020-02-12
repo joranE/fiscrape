@@ -1,14 +1,14 @@
 #' @export
-spr_qual_scrape <- function(url,race_info){
+spr_qual_scrape <- function(url,event_info){
   #Same as distance case except rename rank to rankqual
-  spr_qual_out <- dst_scrape(url = url,race_info = race_info)
+  spr_qual_out <- dst_scrape(url = url,event_info = event_info)
   spr_qual_out[["result"]] <- spr_qual_out[["result"]] %>%
     rename(rankqual = rank) %>%
     mutate(raceid_sq = paste0("SQ",raceid))
   spr_qual_out
 }
 
-spr_final_scrape <- function(url,race_info){
+spr_final_scrape <- function(url,event_info){
   #Load html
   page <- xml2::read_html(x = url)
   
@@ -90,14 +90,14 @@ spr_final_scrape <- function(url,race_info){
            nation = stringr::str_trim(nation)) %>%
     mutate(raceid = get_max_raceid() + 1,
            raceid_sf = paste0("SF",raceid),
-           date = race_info[["date"]],
-           season = race_info[["season"]],
-           cat1 = race_info[["cat1"]],
-           cat2 = race_info[["cat2"]],
-           location = race_info[["location"]],
-           gender = race_info[["gender"]],
-           tech = race_info[["tech"]],
-           length = race_info[["length"]]) 
+           date = event_info[["date"]],
+           season = event_info[["season"]],
+           cat1 = event_info[["cat1"]],
+           cat2 = event_info[["cat2"]],
+           location = event_info[["location"]],
+           gender = event_info[["gender"]],
+           tech = event_info[["tech"]],
+           length = event_info[["length"]]) 
   
   skier <- race %>%
     select(compid,fisid,name,yob) %>%
