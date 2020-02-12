@@ -2,13 +2,10 @@
 #' 
 #' The main function
 #' 
-#' @param \dots Ignored
+#' @param update_bdays boolean
+#' @param debug boolean
 #' @export
-fiscrape <- function(...){
-  #DB Connections
-  #con_remote <- statskier2::db_xc_remote()
-  #con_local <- statskier2::db_xc_local()
-  
+fiscrape <- function(update_bdays = FALSE,debug = FALSE){
   #Main loop
   while(TRUE){
     cat("Make a selection: \n")
@@ -17,146 +14,116 @@ fiscrape <- function(...){
     if (selection == 0){
       break
     }else{
-      #Prompt for race info
-      race_info <- gatherRaceInfo()
-      race_info$season <- getSeason(race_info$date)
+      #Prompt for event info
+      event_info <- gatherRaceInfo()
+      event_info$season <- getSeason(event_info$date)
       
-      #Scrape distance race
-      if (race_info$type == 'Distance'){
-        tbls <- dst_scrape(url = race_info$url,
-                           race_info = race_info)
-        race_url <- data.frame(raceid = tbls$raceid[1],
-                               url1 = race_info$url,
-                               url2 = NA)
+      #Scrape distance event
+      if (event_info$type == 'Distance'){
+        dst_data <- dst_scrape(url = event_info$url,
+                               event_info = event_info)
+        event_url <- data.frame(raceid = dst_data$event$raceid[1],
+                                url1 = event_info$url,
+                                url2 = NA)
+        skiers <- process_skiers(dst_data[["skier"]],conl)
         
-        if (nrow(tbls) > 12){
-          print(head(tbls))
-          print(tail(tbls))
-        }else{
-          print(tbls)
-        }
+        dbBegin(conl,"orig")
+        cond <- tryCatch({
+          #Upload to:
+          # event table
+          # skier table (if new skiers)
+          # dst_result table
+          # dst_pur_comb_times table if applicable
+          # event_url table
+          insert_event(event_type = event_info$type,event_data = dst_data$event,conl)
+          insert_dst_result(dst_data$result,conl)
+          if (nrow(skiers) > 0){
+            insert_skier(skiers,conl)
+          }
+          if (!is.null(dst_data$pur_times)){
+            insert_pur_times(dst_data$pur_times,conl)
+          }
+        },error = try_handler,warning = try_handler,finally = try_finally)
       }
       
-      #Scrape stage race
-      if (race_info$type == 'Stage'){
-        tbls <- stage_scrape(url = race_info$url,
-                             race_info = race_info)
-        race_url <- data.frame(raceid = tbls$raceid[1],
-                               url1 = race_info$url,
-                               url2 = NA)
-        if (nrow(tbls) > 12){
-          print(head(tbls))
-          print(tail(tbls))
-        }else{
-          print(tbls)
-        }
+      #Scrape stage event
+      if (event_info$type == 'Stage'){
+        stg_data <- stg_scrape(url = event_info$url,
+                               event_info = event_info)
+        event_url <- data.frame(raceid = stg_data$event$raceid[1],
+                                url1 = event_info$url,
+                                url2 = NA)
+        skiers <- process_skiers(stg_data[["skier"]],conl)
+        
+        dbBegin(conl,"orig")
+        cond <- tryCatch({
+          #Upload to:
+          # event table
+          # skier table (if new skiers)
+          # stg_result table
+          # stg_race_link table
+          # event_url table
+          insert_event(event_type = event_info$type,event_data = stg_data$event,conl)
+          insert_stg_result(stg_data$result,conl)
+          if (nrow(skiers) > 0){
+            insert_skier(skiers,conl)
+          }
+        },error = try_handler,warning = try_handler,finally = try_finally)
       }
       
-      #Scrape sprint race
-      if (race_info$type == 'Sprint'){
-        #browser()
-        if (!is.na(race_info$url$qual)){
-          qual <- spr_qual_scrape(url = race_info$url$qual,
-                                  race_info = race_info)
-          final <- qual[integer(0),]
+      #Scrape sprint event
+      if (event_info$type == 'Sprint'){
+        spr_qual_data <- NULL
+        spr_fin_data_list <- NULL
+        
+        if (!is.na(event_info$url$qual)){
+          spr_qual_data <- spr_qual_scrape(url = event_info$url$qual,
+                                           event_info = event_info)
+          skiers <- process_skiers(spr_qual_data[["skier"]],conl)
         }
-        if (!is.na(race_info$url$final)){
-          final <- spr_final_scrape(url = race_info$url$final)
+        if (!is.na(event_info$url$final[1])){
+          n_fin <- length(event_info$url$final)
+          spr_fin_data_list <- vector(mode = "list",
+                                length = n_fin)
+          skiers_list <- vector(mode = "list",
+                                length = n_fin)
+          for (i in seq_len(n_fin)){
+            spr_fin_data_list[[i]] <- spr_fin_scrape(url = event_info$url$final[i])
+            skiers_list[[i]] <- process_skiers(spr_fin_data_list[[i]][["skier"]],conl)
+          }
+          
+          skiers <- bind_rows(c(skiers,skiers_list)) %>%
+            distinct()
+          event <- bind_rows(c(spr_qual_data$event,lapply(spr_fin_data_list,'[[',"event"))) %>%
+            distinct()
+          
+          dbBegin(conl,"orig")
+          cond <- tryCatch({
+            #Upload to:
+            # event table
+            # skier table (if new skiers)
+            # spr_qual_result table
+            # spr_fin_result table
+            # event_url table
+            insert_event(event_type = event_info$type,event_data = event,conl)
+            if (nrow(skiers) > 0){
+              insert_skier(skiers,conl)
+            }
+            
+            if (!is.null(spr_qual_data)){
+              insert_spr_qual_result(spr_qual_data$result,conl)
+            }
+            
+            if (!is.null(spr_fin_data_list)){
+              insert_spr_fin_result(spr_fin_data$result,conl)
+            }
+          },error = try_handler,warning = try_handler,finally = try_finally)
         }
         
-        tbls <- combine_qual_final(qual = qual,
-                                   final = final)
-        race_url <- data.frame(raceid = tbls$raceid[1],
-                               url1 = race_info$url$qual,
-                               url2 = race_info$url$final)
-        if (nrow(tbls) > 12){
-          print(head(tbls))
-          print(tail(tbls))
-        }else{
-          print(tbls)
-        }
+        event_url <- data.frame(raceid = tbls$raceid[1],
+                                url1 = event_info$url$qual,
+                                url2 = event_info$url$final)
       }
-      
-      median_time <- data.frame(raceid = tbls$raceid[1],
-                                median_time = median(tbls$time,na.rm = TRUE))
-      
-      #Final check
-      cat("\nDoes this look correct?")
-      selection <- menu(c('Yes','No'))
-      
-      if (selection != 1){
-        next
-      }else{
-        cat("\nUploading...\n")
-        #Remote upload
-        check <- RMySQL::dbWriteTable(conn = con_remote,
-                                      name = "main",
-                                      value = tbls, 
-                                      row.names = FALSE, 
-                                      overwrite = FALSE, 
-                                      append = TRUE)
-        if (!check){
-          stop("Remote upload to main failed.")
-        }
-        
-        check <- RMySQL::dbWriteTable(conn = con_remote,
-                                      name = "median_race_time",
-                                      value = median_time,
-                                      row.names = FALSE,
-                                      overwrite = FALSE,
-                                      append = TRUE)
-        if (!check){
-          stop("Remote upload to median_race_time failed.")
-        }
-        
-        check <- RMySQL::dbWriteTable(conn = con_remote,
-                                      name = "race_url",
-                                      value = race_url,
-                                      row.names = FALSE,
-                                      overwrite = FALSE,
-                                      append = TRUE)
-        if (!check){
-          stop("Remote upload to race_url failed.")
-        }
-        
-        #Local upload
-        # sql <- sprintf("insert into main %s",paste_in(colnames(tbls),quote = FALSE))
-        # sql <- paste(sql,"values",paste_in(rep("?",ncol(tbls)),quote = FALSE))
-        # bulk_insert(cn = con_local,sql = sql,data = tbls)
-        #Might be able to use this upon next RSQLite release after 1.0.0
-        check <- RSQLite::dbWriteTable(conn = con_local,
-                                       name = "main",
-                                       value = tbls,
-                                       row.names = FALSE,
-                                       overwrite = FALSE,
-                                       append = TRUE)
-        if (!check){
-          stop("Local upload to main failed.")
-        }
-        check <- RSQLite::dbWriteTable(conn = con_local,
-                                       name = "median_race_time",
-                                       value = median_time,
-                                       row.names = FALSE,
-                                       overwrite = FALSE,
-                                       append = TRUE)
-        if (!check){
-          stop("Local upload to median_race_time failed.")
-        }
-        check <- RSQLite::dbWriteTable(conn = con_local,
-                                       name = "race_url",
-                                       value = race_url,
-                                       row.names = FALSE,
-                                       overwrite = FALSE,
-                                       append = TRUE)
-        if (!check){
-          stop("Local upload to race_url failed.")
-        }
-      }
-      
-      verify_upload(tbls)
     }
   }
-      
-  dbDisconnect(con_local)
-  dbDisconnect(con_remote)
 }
