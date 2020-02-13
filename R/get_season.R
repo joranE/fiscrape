@@ -1,4 +1,4 @@
-getSeason <- function(dt){
+get_season <- function(dt){
   yr <- as.integer(substr(dt,1,4))
   mo <- as.integer(substr(dt,6,7))
   if (mo >= 6){

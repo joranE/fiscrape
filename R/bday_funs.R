@@ -44,13 +44,14 @@ missing_bday <- function(skier_data,conl){
 }
 
 #' @export
-update_bday <- function(skier_list,conl){
+update_bdays <- function(skier_list,conl){
   for (i in seq_len(nrow(skier_list))){
     bday <- lookup_skier_bday(compid = skier_list$compid[i])
     if (!is.na(bday$birth_date)){
       skier_list$birth_date[i] <- bday$birth_date
     }
   }
+  
   skier_list_update <- skier_list %>%
     filter(!is.na(birth_date))
   if (nrow(skier_list_update) > 0){
@@ -64,4 +65,15 @@ update_bday <- function(skier_list,conl){
       dbCommit(conl)
     }
   }
+}
+
+#' @export
+add_bdays <- function(skier_list,conl){
+  for (i in seq_len(nrow(skier_list))){
+    bday <- lookup_skier_bday(compid = skier_list$compid[i])
+    if (!is.na(bday$birth_date)){
+      skier_list$birth_date[i] <- bday$birth_date
+    }
+  }
+  skier_list
 }

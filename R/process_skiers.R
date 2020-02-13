@@ -1,7 +1,13 @@
 #' @export
-process_skiers <- function(skier_list,conn){
+process_skiers <- function(skier_list,conn,update_bdays){
   src_skier <- tbl(conl,"skier")
-  new_skiers <- anti_join(x[["skier"]],
+  
+  if (update_bdays){
+    cat("\nUpdating skier bdays...")
+    update_bdays(skier_list,conl)
+  }
+  
+  new_skiers <- anti_join(skier_list,
                           src_skier,
                           by = c("compid","fisid","name","yob"),copy = TRUE)
   true_new_skiers <- list()
@@ -26,7 +32,7 @@ process_skiers <- function(skier_list,conn){
       s <- select.list(choices = diff_vals,
                        multiple = TRUE,
                        graphics = FALSE,
-                       title = "Which values (if any) should we update?")
+                       title = "Which values (if any) should we update? (Type 'enter' for none.)")
       if (length(s) == 0) next
       ref_compid <- skier_comp$compid[1]
       updates <- as.list(skier_comp[2,s])
@@ -50,7 +56,7 @@ process_skiers <- function(skier_list,conn){
       s <- select.list(choices = diff_vals,
                        multiple = TRUE,
                        graphics = FALSE,
-                       title = "Which values (if any) should we update?")
+                       title = "Which values (if any) should we update? (Type 'enter' for none.)")
       if (length(s) == 0) next
       ref_compid <- skier_comp$compid[1]
       updates <- as.list(skier_comp[2,s])
@@ -62,8 +68,8 @@ process_skiers <- function(skier_list,conn){
       cat("\nNo new skiers to insert.")
     } else {
       print(true_new_skiers)
-      cat("\nInserting these new skiers.")
-      insert_skier(true_new_skiers,conl)
+      cat("\nSaving these skier to insert.")
     }
   }
+  true_new_skiers
 }

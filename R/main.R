@@ -15,60 +15,96 @@ fiscrape <- function(update_bdays = FALSE,debug = FALSE){
       break
     }else{
       #Prompt for event info
-      event_info <- gatherRaceInfo()
-      event_info$season <- getSeason(event_info$date)
+      event_info <- gather_event_info()
+      event_info$season <- get_season(event_info$date)
       
       #Scrape distance event
       if (event_info$type == 'Distance'){
-        dst_data <- dst_scrape(url = event_info$url,
+        dst_data <- dst_scrape(url = event_info$url$url,
                                event_info = event_info)
-        event_url <- data.frame(raceid = dst_data$event$raceid[1],
-                                url1 = event_info$url,
-                                url2 = NA)
-        skiers <- process_skiers(dst_data[["skier"]],conl)
+        if (!is.na(event_info$url$live_url)){
+          dst_split_data <- dst_split_scrape(event_info$url$live_url,
+                                             dst_data$event$raceid[1])
+        }
+        event_url <- data.frame(eventid = dst_data$event$raceid[1],
+                                url_type = "DST",
+                                url = event_info$url$url)
+        skiers <- process_skiers(dst_data[["skier"]],conl,update_bdays)
         
-        dbBegin(conl,"orig")
-        cond <- tryCatch({
-          #Upload to:
-          # event table
-          # skier table (if new skiers)
-          # dst_result table
-          # dst_pur_comb_times table if applicable
-          # event_url table
-          insert_event(event_type = event_info$type,event_data = dst_data$event,conl)
-          insert_dst_result(dst_data$result,conl)
-          if (nrow(skiers) > 0){
-            insert_skier(skiers,conl)
+        if (!debug){
+          dbBegin(conl,"orig")
+          cond <- tryCatch({
+            #Upload to:
+            # event table
+            # skier table (if new skiers)
+            # dst_result table
+            # dst_pur_comb_times table if applicable
+            # split times (if applicaable)
+            # event_url table
+            insert_data(dst_data$event,"dst_event",conl)
+            insert_dst_result(dst_data$result,conl)
+            if (nrow(skiers) > 0){
+              skiers <- add_bdays(skiers)
+              insert_data(skiers,"skier",conl)
+            }
+            if (!is.null(dst_data$pur_times)){
+              insert_data(dst_data$pur_times,"dst_pur_comb_times",conl)
+            }
+            if (!is.na(event_info$linked_pursuit)){
+              pur_link <- data.frame(raceid = dst_data$event$raceid[1],
+                                     pur_raceid = event_info$linked_pursuit)
+              insert_data(pur_link,"dst_pur_link",conl)
+            }
+            insert_data(event_url,"event_urls",conl)
+            TRUE
+          },error = try_handler,warning = try_handler,finally = try_finally)
+          if (!cond){
+            stop("Insert failed.")
           }
-          if (!is.null(dst_data$pur_times)){
-            insert_pur_times(dst_data$pur_times,conl)
-          }
-        },error = try_handler,warning = try_handler,finally = try_finally)
+        }else{
+          browser()
+        }
+        
       }
       
       #Scrape stage event
       if (event_info$type == 'Stage'){
         stg_data <- stg_scrape(url = event_info$url,
                                event_info = event_info)
-        event_url <- data.frame(raceid = stg_data$event$raceid[1],
-                                url1 = event_info$url,
-                                url2 = NA)
-        skiers <- process_skiers(stg_data[["skier"]],conl)
+        event_url <- data.frame(eventid = stg_data$event$raceid[1],
+                                url_type = "DST",
+                                url = event_info$url)
+        stg_event_link <- data.frame(ov_raceid = rep(stg_data$event$raceid[1],
+                                                  times = length(event_info$linked_stages)),
+                                     stg_raceid = event_info$linked_stages)
+        skiers <- process_skiers(stg_data[["skier"]],conl,update_bdays)
         
-        dbBegin(conl,"orig")
-        cond <- tryCatch({
-          #Upload to:
-          # event table
-          # skier table (if new skiers)
-          # stg_result table
-          # stg_race_link table
-          # event_url table
-          insert_event(event_type = event_info$type,event_data = stg_data$event,conl)
-          insert_stg_result(stg_data$result,conl)
-          if (nrow(skiers) > 0){
-            insert_skier(skiers,conl)
+        if (!debug){
+          dbBegin(conl,"orig")
+          cond <- tryCatch({
+            #Upload to:
+            # event table
+            # skier table (if new skiers)
+            # stg_result table
+            # stg_race_link table
+            # event_url table
+            insert_data(stg_data$event,"stg_event",conl)
+            insert_data(stg_data$result,"stg_result",conl)
+            insert_data(stg_event_link,"stg_event_link",conl)
+            if (nrow(skiers) > 0){
+              skiers <- add_bdays(skiers)
+              insert_data(skiers,"skier",conl)
+            }
+            insert_data(event_url,"event_urls",conl)
+            TRUE
+          },error = try_handler,warning = try_handler,finally = try_finally)
+          if (!cond){
+            stop("Insert failed.")
           }
-        },error = try_handler,warning = try_handler,finally = try_finally)
+        }else {
+          browser()
+        }
+        
       }
       
       #Scrape sprint event
@@ -77,19 +113,20 @@ fiscrape <- function(update_bdays = FALSE,debug = FALSE){
         spr_fin_data_list <- NULL
         
         if (!is.na(event_info$url$qual)){
+          n_qual <- length(c(na.omit(event_info$url$qual)))
           spr_qual_data <- spr_qual_scrape(url = event_info$url$qual,
                                            event_info = event_info)
-          skiers <- process_skiers(spr_qual_data[["skier"]],conl)
+          skiers <- process_skiers(spr_qual_data[["skier"]],conl,update_bdays)
         }
         if (!is.na(event_info$url$final[1])){
-          n_fin <- length(event_info$url$final)
+          n_fin <- length(c(na.omit(event_info$url$final)))
           spr_fin_data_list <- vector(mode = "list",
                                 length = n_fin)
           skiers_list <- vector(mode = "list",
                                 length = n_fin)
           for (i in seq_len(n_fin)){
-            spr_fin_data_list[[i]] <- spr_fin_scrape(url = event_info$url$final[i])
-            skiers_list[[i]] <- process_skiers(spr_fin_data_list[[i]][["skier"]],conl)
+            spr_fin_data_list[[i]] <- spr_fin_scrape(event_info,i)
+            skiers_list[[i]] <- process_skiers(spr_fin_data_list[[i]][["skier"]],conl,update_bdays)
           }
           
           skiers <- bind_rows(c(skiers,skiers_list)) %>%
@@ -97,32 +134,45 @@ fiscrape <- function(update_bdays = FALSE,debug = FALSE){
           event <- bind_rows(c(spr_qual_data$event,lapply(spr_fin_data_list,'[[',"event"))) %>%
             distinct()
           
-          dbBegin(conl,"orig")
-          cond <- tryCatch({
-            #Upload to:
-            # event table
-            # skier table (if new skiers)
-            # spr_qual_result table
-            # spr_fin_result table
-            # event_url table
-            insert_event(event_type = event_info$type,event_data = event,conl)
-            if (nrow(skiers) > 0){
-              insert_skier(skiers,conl)
+          spr_url_types <- rep(c("SPQ","SPF"),each = c(n_qual,n_fin))
+          spr_urls <- c(na.omit(c(event_info$url$qual,event_info$url$final)))
+          event_url <- data.frame(eventid = rep(event$raceid[1],times = length(spr_urls)),
+                                  url_type = spr_url_types,
+                                  url = spr_urls)
+          
+          if (!debug){
+            dbBegin(conl,"orig")
+            cond <- tryCatch({
+              #Upload to:
+              # event table
+              # skier table (if new skiers)
+              # spr_qual_result table
+              # spr_fin_result table
+              # heat time data (if applicable)
+              # event_url table
+              insert_data(event,"spr_event",conl)
+              if (nrow(skiers) > 0){
+                skiers <- add_bdays(skiers)
+                insert_data(skiers,"skier",conl)
+              }
+              if (!is.null(spr_qual_data)){
+                insert_data(spr_qual_data$result,"spr_qual_result",conl)
+              }
+              if (!is.null(spr_fin_data_list)){
+                for (i in seq_len(n_fin))
+                  insert_data(spr_fin_data_list[[i]]$result,"spr_fin_result",conl)
+              }
+              insert_data(event_url,"event_urls",conl)
+              TRUE
+            },error = try_handler,warning = try_handler,finally = try_finally)
+            if (!cond){
+              stop("Insert failed.")
             }
-            
-            if (!is.null(spr_qual_data)){
-              insert_spr_qual_result(spr_qual_data$result,conl)
-            }
-            
-            if (!is.null(spr_fin_data_list)){
-              insert_spr_fin_result(spr_fin_data$result,conl)
-            }
-          },error = try_handler,warning = try_handler,finally = try_finally)
+          }else {
+            browser()
+          }
+          
         }
-        
-        event_url <- data.frame(raceid = tbls$raceid[1],
-                                url1 = event_info$url$qual,
-                                url2 = event_info$url$final)
       }
     }
   }

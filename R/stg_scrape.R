@@ -1,3 +1,4 @@
+#' @export
 stg_scrape <- function(url,event_info){
   #Load html
   page <- xml2::read_html(x = url)
@@ -84,7 +85,7 @@ stg_scrape <- function(url,event_info){
            nation = stringr::str_trim(nation),
            time = stringr::str_trim(time),
            fispoints = as.numeric(stringr::str_trim(fispoints))) %>%
-    mutate(raceid = get_max_raceid() + 1,
+    mutate(eventid = get_max_eventid() + 1,
            date = event_info[["date"]],
            season = event_info[["season"]],
            cat1 = event_info[["cat1"]],
@@ -104,10 +105,10 @@ stg_scrape <- function(url,event_info){
     select(compid,fisid,name,yob) %>%
     mutate(birth_date = NA_character_)
   event <- race %>%
-    select(raceid,season,date,location,cat1,cat2,gender,length,format,tech) %>%
+    select(eventid,season,date,location,cat1,cat2,gender,length,format,tech) %>%
     distinct()
   result <- race %>%
-    select(raceid,compid,nation,rank,time,pb,pbm,pbm_sd,fispoints,notes)
+    select(eventid,compid,nation,rank,time,pb,pbm,pbm_sd,fispoints,notes)
   return(list(event = event,
               skier = skier,
               result = result))

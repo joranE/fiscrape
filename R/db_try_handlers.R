@@ -1,5 +1,6 @@
 try_handler <- function(e){
   RSQLite::dbRollback(conn = conl,name = "orig")
+  return(FALSE)
 }
 
 try_finally <- function(f){

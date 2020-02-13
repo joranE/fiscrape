@@ -4,13 +4,13 @@ spr_qual_scrape <- function(url,event_info){
   spr_qual_out <- dst_scrape(url = url,event_info = event_info)
   spr_qual_out[["result"]] <- spr_qual_out[["result"]] %>%
     rename(rankqual = rank) %>%
-    mutate(raceid_sq = paste0("SQ",raceid))
+    mutate(raceid_sq = paste0("SQ",eventid))
   spr_qual_out
 }
 
-spr_final_scrape <- function(url,event_info){
+spr_final_scrape <- function(event_info,idx){
   #Load html
-  page <- xml2::read_html(x = url)
+  page <- xml2::read_html(x = event_info$url$final[idx])
   
   #Two attempts tp get competitor ids
   compids <- page %>% 
@@ -35,6 +35,10 @@ spr_final_scrape <- function(url,event_info){
   page_tbl <- page %>%
     html_nodes(css = ".g-row.justify-sb,.g-xs-24.bold,.g-xs-24.container") %>%
     map(.f = row_text_extractor)
+  
+  #Remove Final, Semifinal, Quarterfinal & Qualification header rows
+  flag_headers <- function(x) length(x) == 1 && x %in% c("Final","Semifinal","Quarterfinal","Qualification")
+  page_tbl <- purrr::discard(.x = page_tbl,.p = flag_headers)
   
   #Remove garbarge leading rows, start with row beginning with 'Rank'
   first_row <- min(which(sapply(page_tbl,function(x) x[1] == "Rank")))
@@ -88,12 +92,13 @@ spr_final_scrape <- function(url,event_info){
     mutate(name = stringr::str_trim(name),
            yob = as.integer(yob),
            nation = stringr::str_trim(nation)) %>%
-    mutate(raceid = get_max_raceid() + 1,
-           raceid_sf = paste0("SF",raceid),
+    mutate(eventid = get_max_eventid() + 1,
+           raceid_sf = paste0(eventid,LETTERS[idx]),
            date = event_info[["date"]],
            season = event_info[["season"]],
            cat1 = event_info[["cat1"]],
            cat2 = event_info[["cat2"]],
+           spr_fin_cat = event_info$url$cat[idx],
            location = event_info[["location"]],
            gender = event_info[["gender"]],
            tech = event_info[["tech"]],
@@ -103,10 +108,10 @@ spr_final_scrape <- function(url,event_info){
     select(compid,fisid,name,yob) %>%
     mutate(birth_date = NA_character_)
   event <- race %>%
-    select(raceid,season,date,location,cat1,cat2,gender,length,tech) %>%
+    select(eventid,season,date,location,cat1,cat2,gender,length,tech) %>%
     distinct()
   result <- race %>%
-    select(raceid,compid,nation,rank,notes)
+    select(eventid,spr_fin_cat,compid,nation,rank,notes)
   return(list(event = event,
               skier = skier,
               result = result))

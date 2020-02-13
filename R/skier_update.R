@@ -1,13 +1,3 @@
-insert_skier <- function(skier_data,conn){
-  RSQLite::dbWriteTable(conn = conn,
-                        name = "skier",
-                        value = skier_data,
-                        row.names = FALSE,
-                        overwrite = FALSE,
-                        append = TRUE)
-  cat("\nSkier INSERT complete.")
-}
-
 update_skier <- function(ref_compid,updates,conn){
   updates_squish <- paste(purrr::imap(.x = updates,.f = squish_update),collapse = ",")
   q <- "update skier set %s where compid = %s"

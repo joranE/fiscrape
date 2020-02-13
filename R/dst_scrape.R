@@ -62,7 +62,7 @@ dst_scrape <- function(url,event_info){
     rename_at(.vars = vars(ends_with("fis_points")),.funs = function(x) "fispoints") %>%
     mutate(rank = as.integer(stringr::str_trim(rank)),
            notes = NA_character_,
-           raceid = get_max_raceid() + 1,
+           eventid = get_max_eventid() + 1,
            compid = as.integer(compid))
   
   if (any_notes){
@@ -96,8 +96,8 @@ dst_scrape <- function(url,event_info){
              pur_rank = rank) %>%
       mutate(rank = as.integer(stringr::str_extract(rk,"[0-9]+")))
     pur_times <- race %>%
-      mutate(pur_raceid = as.integer(raceid)) %>%
-      select(pur_raceid,
+      mutate(pur_eventid = as.integer(eventid)) %>%
+      select(pur_eventid,
              pur_compid = compid,
              pur_time) %>%
       mutate(pur_time = time_to_seconds(pur_time))
@@ -131,14 +131,15 @@ dst_scrape <- function(url,event_info){
     select(compid,fisid,name,yob) %>%
     mutate(birth_date = NA_character_)
   event <- race %>%
-    select(raceid,season,date,location,cat1,cat2,gender,length,format,tech) %>%
+    select(eventid,season,date,location,cat1,cat2,gender,length,format,tech) %>%
     distinct()
   result <- race %>%
-    select(raceid,compid,nation,rank,time,pb,pbm,pbm_sd,fispoints,notes)
+    select(eventid,compid,nation,rank,time,pb,pbm,pbm_sd,fispoints,notes)
   return(list(event = event,
               skier = skier,
               result = result,
-              pur_times = pur_times))
+              pur_times = pur_times,
+              race = race))
 }
 
 row_text_extractor <- function(x){
