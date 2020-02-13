@@ -1,11 +1,11 @@
 library(dplyr)
 library(RSQLite)
-conl <- RSQLite::dbConnect(RSQLite::SQLite(),
+con <- RSQLite::dbConnect(RSQLite::SQLite(),
                            dbname = "~/Dropbox/new-results-db/output/fis_results_prototype.db")
 src_skier <- tbl(conl,"skier")
 #### Distance Races ####
 #Interval start
-race_info <- list(date = "2020-02-01",
+event_info <- list(date = "2020-02-01",
                   season = "2019-2020",
                   gender = "Men",
                   type = "Distance",
@@ -18,7 +18,7 @@ race_info <- list(date = "2020-02-01",
 url <- "https://www.fis-ski.com/DB/general/results.html?sectorcode=CC&raceid=35122"
 
 #Mass start
-race_info <- list(date = "2020-01-18",
+event_info <- list(date = "2020-01-18",
                   season = "2019-2020",
                   gender = "Men",
                   type = "Distance",
@@ -31,7 +31,7 @@ race_info <- list(date = "2020-01-18",
 url <- "https://www.fis-ski.com/DB/general/results.html?sectorcode=CC&raceid=35393"
 
 #Skiathlon
-race_info <- list(date = "2019-12-07",
+event_info <- list(date = "2019-12-07",
                   season = "2019-2020",
                   gender = "Women",
                   type = "Distance",
@@ -44,7 +44,7 @@ race_info <- list(date = "2019-12-07",
 url <- "https://www.fis-ski.com/DB/general/results.html?sectorcode=CC&raceid=34341"
 
 #Pursuit
-race_info <- list(date = "2020-01-19",
+event_info <- list(date = "2020-01-19",
                   season = "2019-2020",
                   gender = "Men",
                   type = "Distance",
@@ -57,7 +57,7 @@ race_info <- list(date = "2020-01-19",
 url <- "https://www.fis-ski.com/DB/general/results.html?sectorcode=CC&raceid=34394"
 
 #Mass start marathon
-race_info <- list(date = "2020-01-26",
+event_info <- list(date = "2020-01-26",
                   season = "2019-2020",
                   gender = "Women",
                   type = "Distance",
@@ -70,7 +70,7 @@ race_info <- list(date = "2020-01-26",
 url <- "https://www.fis-ski.com/DB/general/results.html?sectorcode=CC&raceid=35698"
 
 #Sprint qualifier
-race_info <- list(date = "2020-02-07",
+event_info <- list(date = "2020-02-07",
                   season = "2019-2020",
                   gender = "Women",
                   type = "Sprint",
@@ -82,8 +82,13 @@ race_info <- list(date = "2020-02-07",
                   cat2 = NA)
 url <- "https://www.fis-ski.com/DB/general/results.html?sectorcode=CC&raceid=36112"
 
-#### Screening skier records ####
-#Prototyping the process for screening skier records that don't match anything
-# currently in the db
-x <- fiscrape:::dst_scrape(url = url,race_info = race_info)
+
+x <- fiscrape:::dst_scrape(url = url,event_info = event_info)
 missing_bday(x[["skier"]],conl)
+
+#### Sprint Final Races ####
+event_info <- gather_event_info()
+event_info$season <- get_season(event_info$date)
+x1 <- fiscrape:::spr_final_scrape(event_info,1)
+x2 <- fiscrape:::spr_final_scrape(event_info,2)
+x3 <- fiscrape:::spr_final_scrape(event_info,3)
