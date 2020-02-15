@@ -3,6 +3,8 @@ library(RSQLite)
 con <- RSQLite::dbConnect(RSQLite::SQLite(),
                            dbname = "~/Dropbox/new-results-db/output/fis_results_prototype.db")
 src_skier <- tbl(conl,"skier")
+src_event <- tbl(conl,"v_event")
+
 #### Distance Races ####
 #Interval start
 event_info <- list(date = "2020-02-01",

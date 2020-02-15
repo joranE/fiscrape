@@ -45,6 +45,7 @@ missing_bday <- function(skier_data,conl){
 
 #' @export
 update_bdays <- function(skier_list,conl){
+  message("Fetching bdays from athlete bios...")
   for (i in seq_len(nrow(skier_list))){
     bday <- lookup_skier_bday(compid = skier_list$compid[i])
     if (!is.na(bday$birth_date)){
@@ -54,17 +55,23 @@ update_bdays <- function(skier_list,conl){
   
   skier_list_update <- skier_list %>%
     filter(!is.na(birth_date))
-  if (nrow(skier_list_update) > 0){
-    for (i in seq_len(nrow(skier_list_update))){
-      compid <- skier_list_update$compid[i]
-      bday <- skier_list_update$birth_date[i]
-      q <- sprintf("update skier set birth_date = '%s' where compid = %s",bday,compid)
-      dbBegin(conl)
-      rs <- dbSendStatement(conl,q)
-      dbClearResult(rs)
-      dbCommit(conl)
+  if (!options()$fiscrape.debug){
+    if (nrow(skier_list_update) > 0){
+      message("Updating ",nrow(skier_list_update)," birth date(s)...")
+      for (i in seq_len(nrow(skier_list_update))){
+        compid <- skier_list_update$compid[i]
+        bday <- skier_list_update$birth_date[i]
+        q <- sprintf("update skier set birth_date = '%s' where compid = %s",bday,compid)
+        RSQLite::dbBegin(conl,name = "bday")
+        rs <- RSQLite::dbSendStatement(conl,q)
+        RSQLite::dbClearResult(rs)
+        RSQLite::dbCommit(conl,name = "bday")
+      }
     }
+  }else {
+    browser()
   }
+  
 }
 
 #' @export

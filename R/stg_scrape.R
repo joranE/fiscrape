@@ -81,6 +81,7 @@ stg_scrape <- function(url,event_info){
   #Final packaging
   race <- race %>%
     mutate(name = stringr::str_trim(name),
+           name = stringr::str_squish(name),
            yob = as.integer(yob),
            nation = stringr::str_trim(nation),
            time = stringr::str_trim(time),

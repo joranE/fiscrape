@@ -4,11 +4,13 @@ spr_qual_scrape <- function(url,event_info){
   spr_qual_out <- dst_scrape(url = url,event_info = event_info)
   spr_qual_out[["result"]] <- spr_qual_out[["result"]] %>%
     rename(rankqual = rank) %>%
-    mutate(raceid_sq = paste0("SQ",eventid))
+    mutate(eventid_sq = paste0("SQ",eventid)) %>%
+    select(eventid_sq,everything())
   spr_qual_out
 }
 
 spr_final_scrape <- function(event_info,idx){
+  message("Pulling spr final results...")
   #Load html
   page <- xml2::read_html(x = event_info$url$final[idx])
   
@@ -90,10 +92,11 @@ spr_final_scrape <- function(event_info,idx){
   #Final packaging
   race <- race %>%
     mutate(name = stringr::str_trim(name),
+           name = stringr::str_squish(name),
            yob = as.integer(yob),
            nation = stringr::str_trim(nation)) %>%
     mutate(eventid = get_max_eventid() + 1,
-           raceid_sf = paste0(eventid,LETTERS[idx]),
+           eventid_sf = paste0(eventid,LETTERS[idx]),
            date = event_info[["date"]],
            season = event_info[["season"]],
            cat1 = event_info[["cat1"]],
@@ -111,8 +114,9 @@ spr_final_scrape <- function(event_info,idx){
     select(eventid,season,date,location,cat1,cat2,gender,length,tech) %>%
     distinct()
   result <- race %>%
-    select(eventid,spr_fin_cat,compid,nation,rank,notes)
+    select(eventid_sf,eventid,spr_fin_cat,compid,nation,rank,notes)
   return(list(event = event,
               skier = skier,
-              result = result))
+              result = result,
+              race = race))
 }

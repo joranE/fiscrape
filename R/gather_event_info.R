@@ -10,39 +10,43 @@ gather_event_info <- function(){
     }
     
     # GENDER
-    gender <- switch(menu(c('Men','Women')),'Men','Women')
+    gender <- switch(menu(c("Men","Women")),"Men","Women")
     
     # LOCATION
     location <- toupper(readline(prompt = "Location: "))
     
     # CAT1 - CAT2
-    cat1 <- ''
-    while (cat1 == ''){
+    cat1 <- ""
+    while (cat1 == ""){
       cat1 <- toupper(readline(prompt = "Cat1: "))
     }
     cat2 <- toupper(readline(prompt = "Cat2: "))
     
-    if (cat2 == 'JUNIOR'){
-      cat2 <- 'Junior'
+    if (cat2 == "JUNIOR"){
+      cat2 <- "Junior"
     }
-    if (toupper(cat2) %in% c('NA','')){
+    if (toupper(cat2) %in% c("NA","")){
       cat2 <- NA_character_
     }
     
     # EVENT TYPE
-    type <- switch(menu(c('Distance','Sprint','Stage')),'Distance','Sprint','Stage')
+    type <- switch(menu(c("Distance","Sprint","Stage")),"Distance","Sprint","Stage")
     
-    if (type == 'Distance'){
-      format <- switch(menu(c('Interval','Mass','Skiathlon','Pursuit')),'Interval','Mass','Skiathlon','Pursuit')
+    # EVENT FORMAT
+    if (type == "Distance"){
+      format <- switch(menu(c("Interval","Mass","Skiathlon","Pursuit")),"Interval","Mass","Skiathlon","Pursuit")
     }else{
       format <- NA_character_
     }
     
-    # EVENT FORMAT (Dst)
-    if ((format == 'Skiathlon' & !is.na(format)) | type == "Stage"){
-      tech <- 'FC'
+    # EVENT TECH
+    if ((format == "Skiathlon" && !is.na(format)) || type == "Stage"){
+      tech <- "FC"
+    }
+    if (type == "Sprint"){
+      tech <- switch(menu(c("Freestyle","Classic")),"F","C")
     }else{
-      tech <- switch(menu(c('Freestyle','Classic','Classic/Freestyle')),'F','C','FC')
+      tech <- switch(menu(c("Freestyle","Classic","Classic/Freestyle")),"F","C","FC")
     }
     
     # EVENT LENGTH
@@ -52,8 +56,8 @@ gather_event_info <- function(){
     }
     
     # URLs
-    linked_pur_raceid <- NA_integer_
-    if (type != 'Sprint'){
+    linked_pur_eventid <- NA_integer_
+    if (type != "Sprint"){
       url <- readline(prompt = "URL: ")
       
       # LINKED PURSUIT EVENT
@@ -69,22 +73,22 @@ gather_event_info <- function(){
                    gender == .gender & 
                    cat1 == .cat1 & 
                    format != "Pursuit") %>%
-          select(raceid,date,location,cat1,cat2,length,tech,format) %>%
+          select(eventid,date,location,cat1,cat2,length,tech,format) %>%
           collect() %>%
           arrange(date)
         print(potential_pur)
         
         chcs <- as.character(seq_len(nrow(potential_stg)))
         sel <- select.list(choices = chcs,
-                                     multiple = FALSE,
-                                     title = "Which event was the first part of this pursuit? (Type 'enter' for none.)",
-                                     graphics = FALSE)
+                           multiple = FALSE,
+                           title = "Which event was the first part of this pursuit? (Type 'enter' for none.)",
+                           graphics = FALSE)
         if (length(sel) > 0){
-          linked_pur_raceid <- potential_pur$raceid[as.integer(sel)]
+          linked_pur_eventid <- potential_pur$eventid[as.integer(sel)]
         }
       }
       
-      live_url <- readline(prompt = "Live URL:")
+      live_url <- readline(prompt = "Live URL: ")
       if (live_url == "") live_url <- NA_character_
       
       url <- list(url = url,
@@ -94,7 +98,7 @@ gather_event_info <- function(){
       # }
     }else{
       url_spr_qual <- readline(prompt = "Qualification URL: ")
-      if (url_spr_qual == '') url_spr_qual <- NA_character_
+      if (url_spr_qual == "") url_spr_qual <- NA_character_
       
       n_finals <- NA
       while (is.na(n_finals)){
@@ -140,14 +144,14 @@ gather_event_info <- function(){
     }
     
     # LINKED STAGE EVENTS
-    linked_stg_raceid <- NA_integer_
+    linked_stg_eventid <- NA_integer_
     if (type == "Stage"){
       #Look for events within the past 2 weeks with the same:
       # -gender
       # -cat1
       # or cat2 = SWC or STG
       min_dt <- as.character(as.Date(dt) - 14)
-      src_event <- tbl(conl,"event")
+      src_event <- tbl(conl,"v_event")
       .gender <- gender
       .cat1 <- cat1
       potential_stg <- src_event %>%
@@ -156,7 +160,7 @@ gather_event_info <- function(){
                  event_type != "Stage" & 
                  gender == .gender & 
                  cat1 == .cat1) %>%
-        select(raceid,date,location,cat1,cat2,length,tech,format) %>%
+        select(eventid,date,location,cat1,cat2,length,tech,format) %>%
         collect() %>%
         arrange(date)
       print(potential_stg)
@@ -167,25 +171,25 @@ gather_event_info <- function(){
                          title = "Which events were stages of this series? (Type 'enter' for none.)",
                          graphics = FALSE)
       if (length(sel) == 1 && sel == "All"){
-        linked_stg_raceid <- potential_stg$raceid
+        linked_stg_eventid <- potential_stg$eventid
       }
       if (length(sel) >= 1 && "All" %ni% sel){
-        linked_stg_raceid <- potential_stg$raceid[as.integer(sel)]
+        linked_stg_eventid <- potential_stg$eventid[as.integer(sel)]
       }
     }
     
     event_info <- list(cat1 = cat1,
-                     cat2 = cat2,
-                     location = location,
-                     type = type,
-                     format = format,
-                     tech = tech,
-                     length = len,
-                     date = dt,
-                     gender = gender,
-                     url = url,
-                     linked_pursuit = linked_pur_raceid,
-                     linked_stages = linked_stg_raceid)
+                       cat2 = cat2,
+                       location = location,
+                       type = type,
+                       format = format,
+                       tech = tech,
+                       length = len,
+                       date = dt,
+                       gender = gender,
+                       url = url,
+                       linked_pursuit = linked_pur_eventid,
+                       linked_stages = linked_stg_eventid)
     
     cat("\n\nIs this correct?\n")
     cat("\nCat1      =",event_info$cat1)
@@ -198,8 +202,8 @@ gather_event_info <- function(){
     cat("\nTechnique =",event_info$tech)
     cat("\nLength    =",event_info$length)
     
-    if (type != 'Sprint'){
-      cat("\nURL       =",event_info$url)
+    if (type != "Sprint"){
+      cat("\nURL       =",event_info$url$url)
     }else{
       cat("\nQual URL  =",event_info$url$qual)
       if (length(url$final) == 1 && is.na(url$final)){
@@ -223,7 +227,9 @@ gather_event_info <- function(){
     }
     
     cat("\n")
-    result <- menu(c('Correct','Incorrect'))
-    if (result == 1){return(event_info)}
+    result <- menu(c("Correct","Incorrect"))
+    if (result == 1){ 
+      return(event_info)
+    }
   }
 }

@@ -1,7 +1,8 @@
 #' Scrape WC Sprint Heat Times
 #' 
 #' @export
-spr_heat_scrape <- function(url,eventid){
+spr_heat_scrape <- function(url,race){
+  message("Pulling spr final heats...")
   url_base <- gsub(pattern = ".htm",replacement = "-%s-%s-99.htm",url,fixed = TRUE)
   
   spr_heats <- vector(mode = "list",length = 8)
@@ -13,6 +14,7 @@ spr_heat_scrape <- function(url,eventid){
   }
   spr_heats_clean <- bind_rows(spr_heats) %>%
     mutate(name = stringr::str_trim(name),
+           name = stringr::str_squish(name),
            heat_rank = if_else(rank == "",NA_character_,rank),
            qf = if_else(substr(heat,1,1) == "1",substr(heat,2,2),NA_character_),
            sf = if_else(substr(heat,1,1) == "2",substr(heat,2,2),NA_character_),
@@ -27,7 +29,12 @@ spr_heat_scrape <- function(url,eventid){
     rename(heat_time = time)
   
   spr_heats_clean <- spr_heats_clean %>%
-    select(eventid,name,heat,everything())
+    left_join(select(race,eventid,compid,name),by = "name") %>%
+    select(-name,-nation) %>%
+    select(eventid,compid,everything())
+  
+  spr_heats_clean <- spr_heats_clean %>%
+    select(eventid,compid,heat,everything())
   
 }
 

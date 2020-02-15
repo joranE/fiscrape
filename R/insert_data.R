@@ -1,10 +1,11 @@
 insert_data <- function(data,tbl,conn){
+  n <- nrow(data)
   RSQLite::dbWriteTable(conn = conn,
                         name = tbl,
                         value = data,
                         row.names = FALSE,
                         overwrite = FALSE,
                         append = TRUE)
-  cat(sprtinf("\nINSERT of %s into %s complete.",data,tbl))
+  message(sprintf("INSERTed %s row(s) into %s.",n,tbl))
 }
 
