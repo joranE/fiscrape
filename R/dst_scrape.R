@@ -9,6 +9,7 @@
 #' @importFrom magrittr extract2
 #' @export
 dst_scrape <- function(url,event_info){
+  message("Pulling dst or spr qual results...")
   #Load html
   page <- xml2::read_html(x = url)
   
@@ -64,6 +65,9 @@ dst_scrape <- function(url,event_info){
            notes = NA_character_,
            eventid = get_max_eventid() + 1,
            compid = as.integer(compid))
+  if ("fispoints" %ni% colnames(race)){
+    race$fispoints <- NA_character_
+  }
   
   if (any_notes){
     # Add notes about DNS, DNF, DSQ, sanctions, etc.
@@ -105,9 +109,11 @@ dst_scrape <- function(url,event_info){
     pur_times <- NULL
   }
   
+  #browser()
   #Final packaging
   race <- race %>%
     mutate(name = stringr::str_trim(name),
+           name = stringr::str_squish(name),
            yob = as.integer(yob),
            nation = stringr::str_trim(nation),
            time = stringr::str_trim(time),

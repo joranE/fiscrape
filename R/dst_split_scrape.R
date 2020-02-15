@@ -1,7 +1,8 @@
-#' Scrape WC Distance Split Times
+#' Scrape Distance Split Times
 #' 
 #' @export
-dst_split_scrape <- function(url,eventid){
+dst_split_scrape <- function(url,race){
+  message("Pulling dst split times...")
   html <- read_html(x = url)
   
   time_pts <- html %>%
@@ -20,14 +21,23 @@ dst_split_scrape <- function(url,eventid){
   }
   
   all_splits <- bind_rows(splits,.id = "split_km") %>%
+    mutate(name = stringr::str_trim(name),
+           name = stringr::str_squish(name)) %>%
     mutate(split_km = gsub("km|Finish","",split_km),
            split_km = as.numeric(stringr::str_trim(split_km))) %>%
     mutate(split_time = if_else(split_time %in% c("DNS","DNF","LAPPED"),"",split_time),
            split_time = if_else(grepl(pattern = "[a-zA-Z]",split_time),"",split_time)) %>%
     mutate(split_time = fiscrape::time_to_seconds(split_time)) %>%
-    mutate(eventid = eventid) %>%
-    mutate(split_rank = as.integer(split_rank)) %>%
-    select(eventid,everything())
+    mutate(split_rank = as.integer(split_rank))
+  
+  all_splits <- all_splits %>%
+    left_join(select(race,eventid,compid,name),by = "name") %>%
+    select(-name,-nation) %>%
+    select(eventid,compid,everything())
+  
+  if (any(is.na(all_splits$compid))){
+    browser()
+  }
   
   all_splits
 }
