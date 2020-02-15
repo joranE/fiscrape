@@ -4,7 +4,9 @@ process_skiers <- function(skier_list,conn,update_bdays){
   
   if (update_bdays){
     no_bday <- src_skier %>%
-      filter(compid %in% local(skier_list$compid) & is.na(birth_date)) %>%
+      filter(compid %in% local(skier_list$compid) & 
+               is.na(birth_date) & 
+               bday_check_date < as.character(Sys.Date() - 365)) %>%
       collect()
     skier_list_no_bday <- skier_list %>%
       filter(compid %in% no_bday$compid)
