@@ -58,15 +58,26 @@ update_bdays <- function(skier_list,conl){
   if (!options()$fiscrape.debug){
     if (nrow(skier_list_update) > 0){
       message("Updating ",nrow(skier_list_update)," birth date(s)...")
-      for (i in seq_len(nrow(skier_list_update))){
-        compid <- skier_list_update$compid[i]
-        bday <- skier_list_update$birth_date[i]
-        q <- sprintf("update skier set birth_date = '%s' where compid = %s",bday,compid)
-        RSQLite::dbBegin(conl,name = "bday")
-        rs <- RSQLite::dbSendStatement(conl,q)
-        RSQLite::dbClearResult(rs)
-        RSQLite::dbCommit(conl,name = "bday")
-      }
+      skier_list_update <- skier_list_update %>%
+        mutate(bday_check_date = as.character(Sys.Date())) %>%
+        select(compid,birth_date,bday_check_date)
+      RSQLite::dbBegin(conl,name = "bday")
+      q <- "update skier set birth_date = $birth_date,bday_check_date = $bday_check_date where compid = $compid"
+      rs <- RSQLite::dbSendStatement(conl,q)
+      RSQLite::dbBind(rs,params = skier_list_update)
+      rows_aff <- RSQLite::dbGetRowsAffected(rs)
+      RSQLite::dbClearResult(rs)
+      RSQLite::dbCommit(conl,name = "bday")
+      # for (i in seq_len(nrow(skier_list_update))){
+      #   compid <- skier_list_update$compid[i]
+      #   bday <- skier_list_update$birth_date[i]
+      #   q <- sprintf("update skier set birth_date = '%s',bday_check_date = '%s' where compid = %s",
+      #                bday,as.character(Sys.Date()),compid)
+      #   RSQLite::dbBegin(conl,name = "bday")
+      #   rs <- RSQLite::dbSendStatement(conl,q)
+      #   RSQLite::dbClearResult(rs)
+      #   RSQLite::dbCommit(conl,name = "bday")
+      # }
     }
   }else {
     browser()
