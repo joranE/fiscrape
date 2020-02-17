@@ -3,15 +3,28 @@ process_skiers <- function(skier_list,conn,update_bdays){
   src_skier <- tbl(conl,"skier")
   
   if (update_bdays){
+    min_chk_date <- as.character(Sys.Date() - 365)
     no_bday <- src_skier %>%
       filter(compid %in% local(skier_list$compid) & 
                is.na(birth_date) & 
-               bday_check_date < as.character(Sys.Date() - 365)) %>%
+               bday_check_date < min_chk_date) %>%
       collect()
     skier_list_no_bday <- skier_list %>%
       filter(compid %in% no_bday$compid)
+    #browser()
     if (nrow(skier_list_no_bday) > 0){
       update_bdays(skier_list_no_bday,conl)
+      
+      chk_dates <- skier_list_no_bday %>%
+        select(compid) %>%
+        mutate(bday_check_date = as.character(Sys.Date()))
+      RSQLite::dbBegin(conl,name = "bday2")
+      q <- "update skier set bday_check_date = $bday_check_date where compid = $compid"
+      rs <- RSQLite::dbSendStatement(conl,q)
+      RSQLite::dbBind(rs,params = chk_dates)
+      rows_aff <- RSQLite::dbGetRowsAffected(rs)
+      RSQLite::dbClearResult(rs)
+      RSQLite::dbCommit(conl,name = "bday2")
     }
   }
   skier_list <- skier_list %>%
@@ -22,7 +35,7 @@ process_skiers <- function(skier_list,conn,update_bdays){
   new_skiers <- anti_join(skier_list,
                           src_skier,
                           by = c("compid","fisid","name","yob"),copy = TRUE)
-  true_new_skiers <- list()
+  true_new_skiers <- NULL
   
   for (i in seq_len(nrow(new_skiers))){
     row <- new_skiers[i,]
@@ -83,8 +96,17 @@ process_skiers <- function(skier_list,conn,update_bdays){
   }
   true_new_skiers <- bind_rows(true_new_skiers)
   if (nrow(true_new_skiers) == 0){
+    true_new_skiers <- data.frame(compid = integer(0),
+                                  fisid = character(0),
+                                  name = character(0),
+                                  yob = integer(0),
+                                  birth_date = character(0),
+                                  bday_check_date = character(0),
+                                  stringsAsFactors = FALSE)
     message("No new skiers to insert.")
   } else {
+    true_new_skiers <- true_new_skiers %>%
+      mutate(bday_check_date = as.character(Sys.Date()))
     print(true_new_skiers)
     message("Saving these skiers to insert.")
   }

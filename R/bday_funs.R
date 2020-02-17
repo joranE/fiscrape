@@ -45,7 +45,8 @@ missing_bday <- function(skier_data,conl){
 
 #' @export
 update_bdays <- function(skier_list,conl){
-  message("Fetching bdays from athlete bios...")
+  n <- nrow(skier_list)
+  message(sprintf("Fetching %s bdays from athlete bios...",n))
   for (i in seq_len(nrow(skier_list))){
     bday <- lookup_skier_bday(compid = skier_list$compid[i])
     if (!is.na(bday$birth_date)){
@@ -61,13 +62,13 @@ update_bdays <- function(skier_list,conl){
       skier_list_update <- skier_list_update %>%
         mutate(bday_check_date = as.character(Sys.Date())) %>%
         select(compid,birth_date,bday_check_date)
-      RSQLite::dbBegin(conl,name = "bday")
+      RSQLite::dbBegin(conl,name = "bday1")
       q <- "update skier set birth_date = $birth_date,bday_check_date = $bday_check_date where compid = $compid"
       rs <- RSQLite::dbSendStatement(conl,q)
       RSQLite::dbBind(rs,params = skier_list_update)
       rows_aff <- RSQLite::dbGetRowsAffected(rs)
       RSQLite::dbClearResult(rs)
-      RSQLite::dbCommit(conl,name = "bday")
+      RSQLite::dbCommit(conl,name = "bday1")
       # for (i in seq_len(nrow(skier_list_update))){
       #   compid <- skier_list_update$compid[i]
       #   bday <- skier_list_update$birth_date[i]
