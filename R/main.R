@@ -64,7 +64,7 @@ fiscrape <- function(update_bdays = FALSE,debug = FALSE){
             }
             message("Inserting event URLs...")
             insert_data(event_url,"event_urls",conl)
-            if (exists("dst_split_data") && inherits(dst_split_data,"data.frame")){
+            if (exists("dst_split_data") && inherits(dst_split_data,"data.frame") & !is.null(dst_split_data)){
               message("Inserting dst splits...")
               insert_data(dst_split_data,"dst_splits",conl)
             }
@@ -123,24 +123,32 @@ fiscrape <- function(update_bdays = FALSE,debug = FALSE){
       if (event_info$type == 'Sprint'){
         spr_qual_data <- NULL
         spr_fin_data_list <- NULL
+        skiers_list <- NULL
+        spr_fin_heat <- NULL
+        n_fin <- length(c(na.omit(event_info$url$final)))
         
         if (!is.na(event_info$url$qual)){
-          n_qual <- length(c(na.omit(event_info$url$qual)))
           spr_qual_data <- spr_qual_scrape(url = event_info$url$qual,
                                            event_info = event_info)
-          skiers <- process_skiers(spr_qual_data[["skier"]],conl,update_bdays)
+          qual_skiers <- process_skiers(spr_qual_data[["skier"]],conl,update_bdays)
         }
         if (!is.na(event_info$url$final[1])){
-          n_fin <- length(c(na.omit(event_info$url$final)))
           spr_fin_data_list <- vector(mode = "list",
                                       length = n_fin)
           spr_fin_heat_list <- vector(mode = "list",
                                       length = n_fin)
-          skiers_list <- vector(mode = "list",
+          fin_skiers <- vector(mode = "list",
                                 length = n_fin)
           for (i in seq_len(n_fin)){
             spr_fin_data_list[[i]] <- spr_final_scrape(event_info,i)
-            skiers_list[[i]] <- process_skiers(spr_fin_data_list[[i]][["skier"]],conl,update_bdays)
+            new_fin_skiers <- anti_join(spr_fin_data_list[[i]][["skier"]],
+                                        qual_skiers,by = c("compid","fisid","name","yob"))
+            if (nrow(new_fin_skiers) > 0){
+              fin_skiers[[i]] <- process_skiers(spr_fin_data_list[[i]][["skier"]],conl,FALSE)
+            }else {
+              fin_skiers[[i]] <- NULL
+            }
+            
             if (!is.na(event_info$url$heats[i])){
               spr_fin_heat_list[[i]] <- spr_heat_scrape(url = event_info$url$heats[i],
                                                         race = spr_fin_data_list[[i]]$race)
@@ -150,12 +158,13 @@ fiscrape <- function(update_bdays = FALSE,debug = FALSE){
         }
         
         #browser()
-        skiers <- bind_rows(c(skiers,bind_rows(skiers_list))) %>%
+        skiers <- bind_rows(qual_skiers,bind_rows(fin_skiers)) %>%
           distinct()
         event <- bind_rows(c(spr_qual_data$event,bind_rows(lapply(spr_fin_data_list,'[[',"event")))) %>%
+          select(-format) %>%
           distinct()
         
-        spr_url_types <- rep(c("SPQ","SPF"),times = c(n_qual,n_fin))
+        spr_url_types <- rep(c("SPQ","SPF"),times = c(1,n_fin))
         spr_urls <- c(na.omit(c(event_info$url$qual,event_info$url$final)))
         event_url <- data.frame(eventid = rep(event$eventid[1],times = length(spr_urls)),
                                 url_type = spr_url_types,
@@ -183,7 +192,7 @@ fiscrape <- function(update_bdays = FALSE,debug = FALSE){
               for (i in seq_len(n_fin))
                 insert_data(spr_fin_data_list[[i]]$result,"spr_fin_result",conl)
             }
-            if (nrow(spr_fin_heat) > 0){
+            if (!is.null(spr_fin_heat) && nrow(spr_fin_heat) > 0){
               insert_data(spr_fin_heat,"spr_fin_heats",conl)
             }
             insert_data(event_url,"event_urls",conl)

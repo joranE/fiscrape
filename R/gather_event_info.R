@@ -43,7 +43,7 @@ gather_event_info <- function(){
     if ((format == "Skiathlon" && !is.na(format)) || type == "Stage"){
       tech <- "FC"
     }
-    if (type == "Sprint"){
+    if (type == "Sprint" || (type == "Distance" & !is.na(format) & format != "Skiathlon")){
       tech <- switch(menu(c("Freestyle","Classic")),"F","C")
     }else{
       tech <- switch(menu(c("Freestyle","Classic","Classic/Freestyle")),"F","C","FC")
@@ -61,9 +61,9 @@ gather_event_info <- function(){
       url <- readline(prompt = "URL: ")
       
       # LINKED PURSUIT EVENT
-      if (type == "Pursuit"){
+      if (format == "Pursuit"){
         min_dt <- as.character(as.Date(dt) - 2)
-        src_event <- tbl(conl,"event")
+        src_event <- tbl(conl,"v_event")
         .gender <- gender
         .cat1 <- cat1
         potential_pur <- src_event %>%
@@ -78,7 +78,7 @@ gather_event_info <- function(){
           arrange(date)
         print(potential_pur)
         
-        chcs <- as.character(seq_len(nrow(potential_stg)))
+        chcs <- as.character(seq_len(nrow(potential_pur)))
         sel <- select.list(choices = chcs,
                            multiple = FALSE,
                            title = "Which event was the first part of this pursuit? (Type 'enter' for none.)",
@@ -107,21 +107,23 @@ gather_event_info <- function(){
         n_finals <- as.integer(n_finals)
       }
       
+      
       if (n_finals > 0){
         url_spr_fin <- rep(NA_character_,times = n_finals)
         url_spr_fin_heat <- rep(NA_character_,times = n_finals)
         spr_fin_cat <- rep(NA_character_,times = n_finals)
-        
         for (i in seq_len(n_finals)){
           url_spr_fin[i] <- readline(prompt  = sprintf("     Finals URL %s: ",i))
           while (is.na(spr_fin_cat[i]) | spr_fin_cat[i] == ""){
             spr_fin_cat[i] <- toupper(readline(prompt  = sprintf("  Spr Final Cat %s: ",i)))
+            if (spr_fin_cat[i] == "") spr_fin_cat[i] <- "SR"
           }
           url_spr_fin_heat[i] <- readline(prompt  = sprintf("Finals Heats URL %s: ",i))
-          if (url_spr_fin_heat[i] == "") url_spr_fin_heat[i] <- NA_character_
+          if (url_spr_fin_heat[i] %in% c("","na","NA")) url_spr_fin_heat[i] <- NA_character_
         }
       }else {
         url_spr_fin <- NA_character_
+        url_spr_fin_heat <- NA_character_
         spr_fin_cat <- NA_character_
       }
       
@@ -204,6 +206,9 @@ gather_event_info <- function(){
     
     if (type != "Sprint"){
       cat("\nURL       =",event_info$url$url)
+      if (!is.na(event_info$url$live_url)){
+        cat("\nLive URL  =",event_info$url$live_url)
+      }
     }else{
       cat("\nQual URL  =",event_info$url$qual)
       if (length(url$final) == 1 && is.na(url$final)){

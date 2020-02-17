@@ -6,6 +6,6 @@ insert_data <- function(data,tbl,conn){
                         row.names = FALSE,
                         overwrite = FALSE,
                         append = TRUE)
-  message(sprintf("INSERTed %s row(s) into %s.",n,tbl))
+  message(sprintf("Inserted %s row(s) into %s.",n,tbl))
 }
 

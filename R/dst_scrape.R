@@ -80,14 +80,13 @@ dst_scrape <- function(url,event_info){
     notes_list <- setNames(lapply(notes_list,`[`,-1),lapply(notes_list,`[[`,1))
     notes_fisids <- lapply(notes_list,find_fisid)
     
+    names(notes_list) <- stringr::str_replace(names(notes_list),"2nd Run$|1st Run$","")
+    names(notes_list) <- stringr::str_trim(names(notes_list),side = "both")
+    
+    notes_list <- purrr::imap(notes_list,build_notes)
     #Transfer DNS, DNF, etc info to notes column
-    for (i in names(notes_list)){
-      if (i == 'Sanctions'){
-        sanctions <- sapply(notes_list[[i]][-1],tail,1)
-        race$notes[race$fisid %in% notes_fisids[[i]]] <- sanctions
-      }else {
-        race$notes[race$fisid %in% notes_fisids[[i]]] <- i
-      }
+    for (i in seq_along(notes_list)){
+      race$notes[race$fisid %in% notes_list[[i]]$fisid] <- notes_list[[i]]$notes
     }
   }
   
@@ -104,7 +103,9 @@ dst_scrape <- function(url,event_info){
       select(pur_eventid,
              pur_compid = compid,
              pur_time) %>%
-      mutate(pur_time = time_to_seconds(pur_time))
+      mutate(pur_comb_time = time_to_seconds(pur_time)) %>%
+      filter(!is.na(pur_comb_time)) %>%
+      select(-pur_time)
   } else {
     pur_times <- NULL
   }
@@ -169,10 +170,25 @@ row_text_extractor <- function(x){
 }
 
 find_note_headers <- function(x){
-  length(x) == 1 & grepl("start|finish|^sanction|disqualified",x[1],ignore.case = TRUE)
+  length(x) == 1 & grepl("start|finish|^sanction|disqualified|lapped",x[1],ignore.case = TRUE)
 }
 
 find_fisid <- function(x){
   u <- unlist(x)
-  u[grepl("[0-9]{7}",u)]
+  fisid <- u[grepl("[0-9]{7}",u)]
+  if (length(fisid) == 0) return(NA_character_) 
+  else return(fisid)
+}
+
+build_notes <- function(el,nm){
+  fisids <- sapply(el,find_fisid)
+  if (nm == "Sanctions"){
+    notes <- sapply(el,tail,1)
+  }else {
+    notes <- rep(nm,length.out = length(fisids))
+  }
+  notes_df <- data.frame(fisid = fisids,
+                         notes = notes,stringsAsFactors = FALSE)
+  notes_df %>%
+    filter(!is.na(fisid))
 }

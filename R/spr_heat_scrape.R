@@ -46,10 +46,19 @@ parse_heat_html <- function(x,round){
   result <- html_nodes(x,css = ".col_result") %>% html_text()
   diff <- html_nodes(x,css = ".col_diff") %>% html_text()
   
+  rank <- rank[-1]
+  name <- name[-1]
+  nsa <- nsa[-1]
+  result <- result[-1]
+  
+  if (length(rank) == 0){
+    rank <- name <- nsa <- result <- NA_character_
+  }
+  
   data.frame(heat = paste(round,collapse = ""),
-             rank = rank[-1],
-             name = name[-1],
-             nation = nsa[-1],
-             time = result[-1],
+             rank = rank,
+             name = name,
+             nation = nsa,
+             time = result,
              stringsAsFactors = FALSE)
 }

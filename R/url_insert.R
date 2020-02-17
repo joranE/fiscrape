@@ -5,5 +5,5 @@ insert_urls <- function(url_data,conn){
                         row.names = FALSE,
                         overwrite = FALSE,
                         append = TRUE)
-  cat("\nEvent URL INSERT complete.")
+  cat("\nEvent URL insert complete.")
 }

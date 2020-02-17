@@ -5,6 +5,15 @@ dst_split_scrape <- function(url,race){
   message("Pulling dst split times...")
   html <- read_html(x = url)
   
+  #Check if they are available
+  noresult <- html %>%
+    html_nodes(css = ".noresult")
+  
+  if (length(noresult) > 0){
+    message("No live results available...")
+    return(NULL)
+  }
+  
   time_pts <- html %>%
     html_nodes("option") %>%
     html_text() %>%

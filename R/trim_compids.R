@@ -1,8 +1,9 @@
 #' @export
 trim_compids <- function(x){
-  if (length(x) < 3) return(x)
-  if (all(x[1:3] == x[4:6])){
-    x <- x[-(1:3)]
-  }
+  n <- min(length(x),10)
+  x1 <- head(x,n)
+  x2 <- tail(x,-n)
+  x1 <- x1[!duplicated(x1)]
+  x <- c(x1,x2)
   x
 }
