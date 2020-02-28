@@ -28,14 +28,14 @@ fiscrape <- function(update_bdays = FALSE,debug = FALSE){
           dst_split_data <- dst_split_scrape(event_info$url$live_url,
                                              dst_data$race)
         }
-        event_url <- data.frame(eventid = dst_data$event$eventid[1],
+        event_url <- data.frame(eventid_sq = NA_character_,
+                                eventid_sf = NA_character_,
+                                eventid = dst_data$event$eventid[1],
                                 url_type = "DST",
                                 url = event_info$url$url)
         skiers <- process_skiers(dst_data[["skier"]],conl,update_bdays)
         
         if (!options()$fiscrape.debug){
-          dbBegin(conl,name = "orig")
-          cond <- tryCatch({
             #Upload to:
             # event table
             # skier table (if new skiers)
@@ -43,6 +43,7 @@ fiscrape <- function(update_bdays = FALSE,debug = FALSE){
             # dst_pur_comb_times table if applicable
             # split times (if applicaable)
             # event_url table
+          DBI::dbWithTransaction(conl,{
             message("Inserting event...")
             insert_data(dst_data$event,"dst_event",conl)
             message("Inserting results...")
@@ -63,16 +64,13 @@ fiscrape <- function(update_bdays = FALSE,debug = FALSE){
               insert_data(pur_link,"dst_pur_link",conl)
             }
             message("Inserting event URLs...")
-            insert_data(event_url,"event_urls",conl)
-            if (exists("dst_split_data") && inherits(dst_split_data,"data.frame") & !is.null(dst_split_data)){
+            insert_data(event_url,"event_url",conl)
+            if (exists("dst_split_data") && inherits(dst_split_data,"data.frame") && !is.null(dst_split_data)){
               message("Inserting dst splits...")
               insert_data(dst_split_data,"dst_splits",conl)
+              dst_split_data <- NULL
             }
-            TRUE
-          },error = try_handler,warning = try_handler,finally = try_finally())
-          if (!cond){
-            stop("Insert failed.")
-          }
+          })
         }else{
           browser()
         }
@@ -81,25 +79,26 @@ fiscrape <- function(update_bdays = FALSE,debug = FALSE){
       
       #Scrape stage event
       if (event_info$type == 'Stage'){
-        stg_data <- stg_scrape(url = event_info$url,
+        stg_data <- stg_scrape(url = event_info$url$url,
                                event_info = event_info)
-        event_url <- data.frame(eventid = stg_data$event$eventid[1],
+        event_url <- data.frame(eventid_sq = NA_character_,
+                                eventid_sf = NA_character_,
+                                eventid = stg_data$event$eventid[1],
                                 url_type = "DST",
-                                url = event_info$url)
+                                url = event_info$url$url)
         stg_event_link <- data.frame(ov_eventid = rep(stg_data$event$eventid[1],
                                                       times = length(event_info$linked_stages)),
                                      stg_eventid = event_info$linked_stages)
         skiers <- process_skiers(stg_data[["skier"]],conl,update_bdays)
-        
+
         if (!options()$fiscrape.debug){
-          dbBegin(conl,name = "orig")
-          cond <- tryCatch({
             #Upload to:
             # event table
             # skier table (if new skiers)
             # stg_result table
             # stg_race_link table
             # event_url table
+          DBI::dbWithTransaction(conl,{
             insert_data(stg_data$event,"stg_event",conl)
             insert_data(stg_data$result,"stg_result",conl)
             insert_data(stg_event_link,"stg_event_link",conl)
@@ -107,12 +106,8 @@ fiscrape <- function(update_bdays = FALSE,debug = FALSE){
               skiers <- add_bdays(skiers)
               insert_data(skiers,"skier",conl)
             }
-            insert_data(event_url,"event_urls",conl)
-            TRUE
-          },error = try_handler,warning = try_handler,finally = try_finally())
-          if (!cond){
-            stop("Insert failed.")
-          }
+            insert_data(event_url,"event_url",conl)
+          })
         }else {
           browser()
         }
@@ -144,7 +139,7 @@ fiscrape <- function(update_bdays = FALSE,debug = FALSE){
             new_fin_skiers <- anti_join(spr_fin_data_list[[i]][["skier"]],
                                         qual_skiers,by = c("compid","fisid","name","yob"))
             if (nrow(new_fin_skiers) > 0){
-              fin_skiers[[i]] <- process_skiers(spr_fin_data_list[[i]][["skier"]],conl,FALSE)
+              fin_skiers[[i]] <- process_skiers(new_fin_skiers,conl,FALSE)
             }else {
               fin_skiers[[i]] <- NULL
             }
@@ -154,7 +149,13 @@ fiscrape <- function(update_bdays = FALSE,debug = FALSE){
                                                         race = spr_fin_data_list[[i]]$race)
             }
           }
-          spr_fin_heat <- bind_rows(spr_fin_heat_list)
+          if (any(!is.na(event_info$url$heats))){
+            spr_fin_heat_list <- setNames(spr_fin_heat_list,LETTERS[seq_len(n_fin)])
+            spr_fin_heat <- bind_rows(spr_fin_heat_list,.id = "sf_id") %>%
+              mutate(eventid_sf = paste0(eventid,sf_id)) %>%
+              select(-sf_id) %>%
+              select(eventid_sf,everything())
+          }
         }
         
         #browser()
@@ -166,13 +167,13 @@ fiscrape <- function(update_bdays = FALSE,debug = FALSE){
         
         spr_url_types <- rep(c("SPQ","SPF"),times = c(1,n_fin))
         spr_urls <- c(na.omit(c(event_info$url$qual,event_info$url$final)))
-        event_url <- data.frame(eventid = rep(event$eventid[1],times = length(spr_urls)),
+        event_url <- data.frame(eventid_sq = paste0("SQ",event_info$url$qual),
+                                eventid_sf = paste0(event_info$url$final,LETTERS[1:n_fin]),
+                                eventid = rep(event$eventid[1],times = length(spr_urls)),
                                 url_type = spr_url_types,
                                 url = spr_urls)
         
         if (!options()$fiscrape.debug){
-          dbBegin(conl,name = "orig")
-          cond <- tryCatch({
             #Upload to:
             # event table
             # skier table (if new skiers)
@@ -180,6 +181,7 @@ fiscrape <- function(update_bdays = FALSE,debug = FALSE){
             # spr_fin_result table
             # heat time data (if applicable)
             # event_url table
+          DBI::dbWithTransaction(conl,{
             insert_data(event,"spr_event",conl)
             if (nrow(skiers) > 0){
               skiers <- add_bdays(skiers)
@@ -195,12 +197,8 @@ fiscrape <- function(update_bdays = FALSE,debug = FALSE){
             if (!is.null(spr_fin_heat) && nrow(spr_fin_heat) > 0){
               insert_data(spr_fin_heat,"spr_fin_heats",conl)
             }
-            insert_data(event_url,"event_urls",conl)
-            TRUE
-          },error = try_handler,warning = try_handler,finally = try_finally())
-          if (!cond){
-            stop("Insert failed.")
-          }
+            insert_data(event_url,"event_url",conl)
+          })
         }else {
           browser()
         }

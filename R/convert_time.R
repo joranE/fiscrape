@@ -1,5 +1,5 @@
 ms_hms_fun <- function(i,tm){
-  fun_list <- list(function(x) NA_real_,
+  fun_list <- list(function(x) as.numeric(x),
                    compose(lubridate::period_to_seconds,lubridate::ms),
                    compose(lubridate::period_to_seconds,lubridate::hms))
   fun_list[[i]](tm)

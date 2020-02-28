@@ -134,9 +134,12 @@ dst_scrape <- function(url,event_info){
            pbm_sd = sd(pbm,na.rm = TRUE),
            pbm_sd = if_else(is.na(time),NA_real_,pbm_sd))
   
+  #race_penalty <- dst_race_penalty(result_data = race,event_date = event_info[["date"]])
+  
   skier <- race %>%
     select(compid,fisid,name,yob) %>%
-    mutate(birth_date = NA_character_)
+    mutate(compid = as.integer(compid),
+           birth_date = NA_character_)
   event <- race %>%
     select(eventid,season,date,location,cat1,cat2,gender,length,format,tech) %>%
     distinct()

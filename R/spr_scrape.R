@@ -78,14 +78,13 @@ spr_final_scrape <- function(event_info,idx){
     notes_list <- setNames(lapply(notes_list,`[`,-1),lapply(notes_list,`[[`,1))
     notes_fisids <- lapply(notes_list,find_fisid)
     
+    names(notes_list) <- stringr::str_replace(names(notes_list),"2nd Run$|1st Run$","")
+    names(notes_list) <- stringr::str_trim(names(notes_list),side = "both")
+    
+    notes_list <- purrr::imap(notes_list,build_notes)
     #Transfer DNS, DNF, etc info to notes column
-    for (i in names(notes_list)){
-      if (i == 'Sanctions'){
-        sanctions <- sapply(notes_list[[i]][-1],tail,1)
-        race$notes[race$fisid %in% notes_fisids[[i]]] <- sanctions
-      }else {
-        race$notes[race$fisid %in% notes_fisids[[i]]] <- i
-      }
+    for (i in seq_along(notes_list)){
+      race$notes[race$fisid %in% notes_list[[i]]$fisid] <- notes_list[[i]]$notes
     }
   }
   
@@ -107,9 +106,15 @@ spr_final_scrape <- function(event_info,idx){
            tech = event_info[["tech"]],
            length = event_info[["length"]]) 
   
+  #race_penalty <- spr_race_penalty(result_data = race,event_date = event_info[["date"]])
+  
   skier <- race %>%
     select(compid,fisid,name,yob) %>%
-    mutate(birth_date = NA_character_)
+    mutate(compid = as.integer(compid),
+           fisid = as.character(fisid),
+           name = as.character(name),
+           yob = as.integer(yob),
+           birth_date = NA_character_)
   event <- race %>%
     select(eventid,season,date,location,cat1,cat2,gender,length,tech) %>%
     distinct()

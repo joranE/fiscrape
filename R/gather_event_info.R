@@ -61,7 +61,7 @@ gather_event_info <- function(){
       url <- readline(prompt = "URL: ")
       
       # LINKED PURSUIT EVENT
-      if (format == "Pursuit"){
+      if (!is.na(format) && format == "Pursuit"){
         min_dt <- as.character(as.Date(dt) - 2)
         src_event <- tbl(conl,"v_event")
         .gender <- gender
@@ -83,8 +83,10 @@ gather_event_info <- function(){
                            multiple = FALSE,
                            title = "Which event was the first part of this pursuit? (Type 'enter' for none.)",
                            graphics = FALSE)
-        if (length(sel) > 0){
+        if (length(sel) > 0 && sel != ""){
           linked_pur_eventid <- potential_pur$eventid[as.integer(sel)]
+        }else{
+          linked_pur_eventid <- NA_character_
         }
       }
       

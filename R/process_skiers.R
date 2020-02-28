@@ -11,20 +11,20 @@ process_skiers <- function(skier_list,conn,update_bdays){
       collect()
     skier_list_no_bday <- skier_list %>%
       filter(compid %in% no_bday$compid)
-    #browser()
+
     if (nrow(skier_list_no_bday) > 0){
       update_bdays(skier_list_no_bday,conl)
       
       chk_dates <- skier_list_no_bday %>%
         select(compid) %>%
         mutate(bday_check_date = as.character(Sys.Date()))
-      RSQLite::dbBegin(conl,name = "bday2")
-      q <- "update skier set bday_check_date = $bday_check_date where compid = $compid"
-      rs <- RSQLite::dbSendStatement(conl,q)
-      RSQLite::dbBind(rs,params = chk_dates)
-      rows_aff <- RSQLite::dbGetRowsAffected(rs)
-      RSQLite::dbClearResult(rs)
-      RSQLite::dbCommit(conl,name = "bday2")
+      DBI::dbWithTransaction(conl,{
+        q <- "update skier set bday_check_date = $bday_check_date where compid = $compid"
+        rs <- RSQLite::dbSendStatement(conl,q)
+        RSQLite::dbBind(rs,params = chk_dates)
+        rows_aff <- RSQLite::dbGetRowsAffected(rs)
+        RSQLite::dbClearResult(rs)
+      })
     }
   }
   skier_list <- skier_list %>%
@@ -40,7 +40,7 @@ process_skiers <- function(skier_list,conn,update_bdays){
   for (i in seq_len(nrow(new_skiers))){
     row <- new_skiers[i,]
     cap_name <- stringr::str_extract(string = new_skiers$name[i],"^[-A-Z]+")
-    cap_name <- paste0("%",cap_name,"%")
+    cap_name <- paste0("% ",cap_name," %")
     poss_match <- src_skier %>% 
       filter(compid %in% local(new_skiers$compid[i]) | 
                fisid %in% local(new_skiers$fisid[i]) | 
