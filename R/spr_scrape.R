@@ -1,7 +1,7 @@
 #' @export
-spr_qual_scrape <- function(url,event_info){
+spr_qual_scrape <- function(url,event_info,event_type = "Sprint"){
   #Same as distance case except rename rank to rankqual
-  spr_qual_out <- dst_scrape(url = url,event_info = event_info)
+  spr_qual_out <- dst_scrape(url = url,event_info = event_info,event_type = event_type)
   spr_qual_out[["result"]] <- spr_qual_out[["result"]] %>%
     rename(rankqual = rank) %>%
     mutate(eventid_sq = paste0("SQ",eventid)) %>%
@@ -9,10 +9,10 @@ spr_qual_scrape <- function(url,event_info){
   spr_qual_out
 }
 
-spr_final_scrape <- function(event_info,idx){
+spr_final_scrape <- function(event_info,idx,override_eventid = NULL){
   message("Pulling spr final results...")
   #Load html
-  page <- xml2::read_html(x = event_info$url$final[idx])
+  page <- safe_retry_read_html(x = event_info$url$final[idx])
   
   #Two attempts tp get competitor ids
   compids <- page %>% 
@@ -59,7 +59,7 @@ spr_final_scrape <- function(event_info,idx){
   race <- race %>%
     setNames(.,compids)
   race <- bind_rows(!!!race,.id = "compid") %>%
-    select(-Bib) %>%
+    select(-matches("Bib")) %>%
     janitor::clean_names(.,case = "snake") %>%
     rename(fisid = fis_code,name = athlete,
            yob = year) %>%
@@ -84,8 +84,26 @@ spr_final_scrape <- function(event_info,idx){
     notes_list <- purrr::imap(notes_list,build_notes)
     #Transfer DNS, DNF, etc info to notes column
     for (i in seq_along(notes_list)){
-      race$notes[race$fisid %in% notes_list[[i]]$fisid] <- notes_list[[i]]$notes
+      cur_notes <- notes_list[[i]]
+      cur_notes <- filter(cur_notes,fisid %in% race$fisid)
+      if (nrow(cur_notes) == 0) {
+        next
+      }else {
+        if (anyDuplicated(cur_notes$fisid)){
+          cur_notes <- cur_notes %>%
+            group_by(fisid) %>%
+            summarise(notes = paste(notes,collapse = ", ")) %>%
+            as.data.frame()
+        }
+        race$notes[race$fisid %in% cur_notes$fisid] <- cur_notes$notes
+      }
     }
+  }
+  
+  if (is.null(override_eventid)){
+    ev_id <- get_max_eventid() + 1
+  }else {
+    ev_id <- override_eventid
   }
   
   #Final packaging
@@ -94,8 +112,8 @@ spr_final_scrape <- function(event_info,idx){
            name = stringr::str_squish(name),
            yob = as.integer(yob),
            nation = stringr::str_trim(nation)) %>%
-    mutate(eventid = get_max_eventid() + 1,
-           eventid_sf = paste0(eventid,LETTERS[idx]),
+    mutate(eventid = ev_id,
+           eventid_sf = paste0(ev_id,LETTERS[idx]),
            date = event_info[["date"]],
            season = event_info[["season"]],
            cat1 = event_info[["cat1"]],

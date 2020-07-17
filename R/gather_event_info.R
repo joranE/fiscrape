@@ -5,7 +5,7 @@ gather_event_info <- function(){
     
     # DATE
     dt <- ""
-    while (!grepl("[0-9]{4}-[0-9]{2}-[0-9]{2}",dt)){
+    while (is.na(possibly_date(dt))){
       dt <- readline(prompt = "Date: ")
     }
     
@@ -34,25 +34,29 @@ gather_event_info <- function(){
     
     # EVENT FORMAT
     if (type == "Distance"){
-      format <- switch(menu(c("Interval","Mass","Skiathlon","Pursuit")),"Interval","Mass","Skiathlon","Pursuit")
+      format <- switch(menu(c("Interval","Mass","Skiathlon","Pursuit","Pursuit Break")),"Interval","Mass","Skiathlon","Pursuit","Pursuit Break")
     }else{
       format <- NA_character_
     }
     
     # EVENT TECH
-    if ((format == "Skiathlon" && !is.na(format)) || type == "Stage"){
+    if ((format %in% c("Skiathlon","Pursuit Break") && !is.na(format)) || type == "Stage"){
       tech <- "FC"
-    }
-    if (type == "Sprint" || (type == "Distance" & !is.na(format) & format != "Skiathlon")){
-      tech <- switch(menu(c("Freestyle","Classic")),"F","C")
     }else{
-      tech <- switch(menu(c("Freestyle","Classic","Classic/Freestyle")),"F","C","FC")
+      if (type == "Sprint" || (type == "Distance" && !is.na(format) && !format %in% c("Skiathlon","Pursuit Break"))){
+        tech <- switch(menu(c("Freestyle","Classic","Unknown")),"F","C",NA_character_)
+      }else{
+        tech <- switch(menu(c("Freestyle","Classic","Classic/Freestyle")),"F","C","FC")
+      }
     }
     
     # EVENT LENGTH
     len <- NA_real_
     while (is.na(len)){
       len <- as.numeric(readline(prompt = "Length: "))
+    }
+    if (len < 0){
+      len <- NA_real_
     }
     
     # URLs
@@ -61,7 +65,7 @@ gather_event_info <- function(){
       url <- readline(prompt = "URL: ")
       
       # LINKED PURSUIT EVENT
-      if (!is.na(format) && format == "Pursuit"){
+      if (!is.na(format) && format %in% c("Pursuit","Pursuit Break")){
         min_dt <- as.character(as.Date(dt) - 2)
         src_event <- tbl(conl,"v_event")
         .gender <- gender
@@ -81,7 +85,7 @@ gather_event_info <- function(){
         chcs <- as.character(seq_len(nrow(potential_pur)))
         sel <- select.list(choices = chcs,
                            multiple = FALSE,
-                           title = "Which event was the first part of this pursuit? (Type 'enter' for none.)",
+                           title = "Which event was the first part of this pursuit? (Type '0' for none.)",
                            graphics = FALSE)
         if (length(sel) > 0 && sel != ""){
           linked_pur_eventid <- potential_pur$eventid[as.integer(sel)]
@@ -226,7 +230,7 @@ gather_event_info <- function(){
       }
     }
     
-    if (!is.na(format) & format == "Pursuit"){
+    if (!is.na(format) && format %in% c("Pursuit","Pursuit Break")){
       cat("\nLinked pursuit event =",event_info$linked_pursuit)
     }
     if (type == "Stage"){

@@ -2,8 +2,13 @@
 lookup_skier_bday <- function(compid){
   skier_profile_url <- "https://www.fis-ski.com/DB/general/athlete-biography.html?sectorcode=CC&competitorid=%s"
   
-  page <- read_html(x = sprintf(skier_profile_url,compid))
-  node_info <- page %>%
+  page <- safe_html(x = sprintf(skier_profile_url,compid))
+  if (is.null(page$result)){
+    message("Athlete biography for compid ",compid," failed to load.")
+    return(list(yob = NA_integer_,
+                birth_date = NA_character_))
+  }
+  node_info <- page$result %>%
     html_nodes("[id = 'Birthdate']") %>% 
     html_children() %>%
     html_text()
@@ -12,13 +17,14 @@ lookup_skier_bday <- function(compid){
   .yob <- NA_integer_
   .birth_date <- NA_character_
   
-  if (grepl("[0-9]{4}",bday)){
+  if (grepl("^[0-9]{4}$",bday)){
     type <- "yob"
-  }
-  if (grepl("[0-9]{2}-[0-9]{2}-[0-9]{4}",bday)){
-    type <- "date"
-  } else{
-    type <- "missing"
+  }else {
+    if (grepl("^[0-9]{2}-[0-9]{2}-[0-9]{4}$",bday)){
+      type <- "date"
+    } else{
+      type <- "missing"
+    }
   }
   
   if (type == "yob"){
@@ -69,16 +75,6 @@ update_bdays <- function(skier_list,conl){
       rows_aff <- RSQLite::dbGetRowsAffected(rs)
       RSQLite::dbClearResult(rs)
       RSQLite::dbCommit(conl,name = "bday1")
-      # for (i in seq_len(nrow(skier_list_update))){
-      #   compid <- skier_list_update$compid[i]
-      #   bday <- skier_list_update$birth_date[i]
-      #   q <- sprintf("update skier set birth_date = '%s',bday_check_date = '%s' where compid = %s",
-      #                bday,as.character(Sys.Date()),compid)
-      #   RSQLite::dbBegin(conl,name = "bday")
-      #   rs <- RSQLite::dbSendStatement(conl,q)
-      #   RSQLite::dbClearResult(rs)
-      #   RSQLite::dbCommit(conl,name = "bday")
-      # }
     }
   }else {
     browser()
