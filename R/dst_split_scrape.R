@@ -1,5 +1,6 @@
 #' Scrape Distance Split Times
 #' 
+#' @importFrom purrr safely
 #' @export
 dst_split_scrape <- function(url,race){
   message("Pulling dst split times...")

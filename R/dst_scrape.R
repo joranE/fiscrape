@@ -1,7 +1,7 @@
 #' @import rvest
 #' @import dplyr
 #' @import xml2
-#' @import purrr
+#' @importFrom purrr imap
 #' @importFrom stringr str_trim
 #' @importFrom stringr str_extract
 #' @importFrom stringr str_replace

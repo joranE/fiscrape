@@ -9,6 +9,7 @@ spr_qual_scrape <- function(url,event_info,event_type = "Sprint"){
   spr_qual_out
 }
 
+#' @importFrom purrr discard
 spr_final_scrape <- function(event_info,idx,override_eventid = NULL){
   message("Pulling spr final results...")
   #Load html
