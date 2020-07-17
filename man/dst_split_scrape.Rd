@@ -2,10 +2,10 @@
 % Please edit documentation in R/dst_split_scrape.R
 \name{dst_split_scrape}
 \alias{dst_split_scrape}
-\title{Scrape WC Sprint Heat Times}
+\title{Scrape Distance Split Times}
 \usage{
-dst_split_scrape()
+dst_split_scrape(url, race)
 }
 \description{
-Scrape WC Sprint Heat Times
+Scrape Distance Split Times
 }
