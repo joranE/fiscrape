@@ -5,7 +5,6 @@ Version: 1.0
 Imports:
     DBI,
     RSQLite,
-    RMySQL,
     rvest,
     xml2,
     dplyr,
@@ -17,4 +16,4 @@ Maintainer: Joran Elias <statisticalskier@gmail.com>
 Description: What you think.
 Encoding: UTF-8
 License: GPL
-RoxygenNote: 7.0.2
+RoxygenNote: 7.1.0

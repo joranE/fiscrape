@@ -1,5 +1,5 @@
 #' @export
-stg_scrape <- function(url,event_info){
+stg_scrape <- function(url,event_info,event_type){
   #Load html
   #browser()
   page <- xml2::read_html(x = url)

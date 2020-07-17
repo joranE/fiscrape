@@ -8,10 +8,10 @@
 #' @importFrom stringr str_replace_all
 #' @importFrom magrittr extract2
 #' @export
-dst_scrape <- function(url,event_info){
+dst_scrape <- function(url,event_info,event_type){
   message("Pulling dst or spr qual results...")
   #Load html
-  page <- xml2::read_html(x = url)
+  page <- safe_retry_read_html(x = url)
   
   #Two attempts tp get competitor ids
   # First...
@@ -39,7 +39,7 @@ dst_scrape <- function(url,event_info){
     html_nodes(css = ".g-row.justify-sb,.g-xs-24.bold,.g-xs-24.container") %>%
     map(.f = row_text_extractor)
   
-  #Remove garbarge leading rows, start with row beginning with 'Rank'
+  #Remove garbage leading rows, start with row beginning with 'Rank'
   first_row <- min(which(sapply(page_tbl,function(x) x[1] == "Rank")))
   page_tbl <- page_tbl[first_row:length(page_tbl)]
   any_notes <- any(lengths(page_tbl) == 1)
@@ -56,7 +56,7 @@ dst_scrape <- function(url,event_info){
   race <- race %>%
     setNames(.,compids)
   race <- bind_rows(!!!race,.id = "compid") %>%
-    select(-Bib) %>%
+    select(-matches("Bib")) %>%
     janitor::clean_names(.,case = "snake") %>%
     rename(fisid = fis_code,name = athlete,
            yob = year) %>%
@@ -86,7 +86,19 @@ dst_scrape <- function(url,event_info){
     notes_list <- purrr::imap(notes_list,build_notes)
     #Transfer DNS, DNF, etc info to notes column
     for (i in seq_along(notes_list)){
-      race$notes[race$fisid %in% notes_list[[i]]$fisid] <- notes_list[[i]]$notes
+      cur_notes <- notes_list[[i]]
+      cur_notes <- filter(cur_notes,fisid %in% race$fisid)
+      if (nrow(cur_notes) == 0) {
+        next
+      }else {
+        if (anyDuplicated(cur_notes$fisid)){
+          cur_notes <- cur_notes %>%
+            group_by(fisid) %>%
+            summarise(notes = paste(notes,collapse = ", ")) %>%
+            as.data.frame()
+        }
+        race$notes[race$fisid %in% cur_notes$fisid] <- cur_notes$notes
+      }
     }
   }
   
@@ -134,8 +146,18 @@ dst_scrape <- function(url,event_info){
            pbm_sd = sd(pbm,na.rm = TRUE),
            pbm_sd = if_else(is.na(time),NA_real_,pbm_sd))
   
-  #race_penalty <- dst_race_penalty(result_data = race,event_date = event_info[["date"]])
+  if (event_type == "Distance"){
+     race_penalty <- dst_race_penalty(result_data = race,event_date = event_info[["date"]])
+  } else {
+     race_penalty <- spr_race_penalty(result_data = race,event_date = event_info[["date"]])
+  }
   
+  race_pbm_sd <- sd(race$time,na.rm = TRUE)
+  race_pen_sd <- data.frame(eventid = race$eventid[1],
+                            pbm_sd = race_pbm_sd,
+                            penalty = race_penalty)
+  #race_pen_sd <- NULL
+  #browser()
   skier <- race %>%
     select(compid,fisid,name,yob) %>%
     mutate(compid = as.integer(compid),
@@ -149,7 +171,8 @@ dst_scrape <- function(url,event_info){
               skier = skier,
               result = result,
               pur_times = pur_times,
-              race = race))
+              race = race,
+              race_pen_sd = race_pen_sd))
 }
 
 row_text_extractor <- function(x){

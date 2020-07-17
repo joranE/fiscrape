@@ -36,11 +36,17 @@ dst_split_scrape <- function(url,race){
   
   splits <- vector(mode = "list",length = nrow(time_pts))
   splits <- setNames(splits,time_pts$lab)
+  read_html_safely <- purrr::safely(.f = xml2::read_html)
   for (i in seq_len(nrow(time_pts))){
     url_split <- gsub(pattern = ".htm",
                       replacement = paste0("-",time_pts$val[i],".htm"),url,fixed = TRUE)
-    splits[[i]] <- read_html(x = url_split) %>%
-      parse_split_html()
+    html <- read_html_safely(x = url_split)
+    if (is.null(html$error)){
+      splits[[i]] <- html$result %>%
+        parse_split_html()
+    }else {
+      splits[[i]] <- NULL
+    }
   }
   
   #browser()
