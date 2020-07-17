@@ -5,6 +5,7 @@ ms_hms_fun <- function(i,tm){
   fun_list[[i]](tm)
 }
 
+#' @importFrom purrr map2_dbl
 time_to_seconds <- function(times){
   times[is.na(times)] <- ""
   times <- stringr::str_replace_all(string = times,c("[hms]" = "","^:" = "","," = "\\."))
