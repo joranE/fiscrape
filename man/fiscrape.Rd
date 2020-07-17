@@ -4,10 +4,12 @@
 \alias{fiscrape}
 \title{Run the screen scraper}
 \usage{
-fiscrape(...)
+fiscrape(update_bdays = FALSE, debug = FALSE)
 }
 \arguments{
-\item{\dots}{Ignored}
+\item{update_bdays}{boolean}
+
+\item{debug}{boolean}
 }
 \description{
 The main function

@@ -4,8 +4,6 @@
 \name{reexports}
 \alias{reexports}
 \alias{db_xc_local}
-\alias{db_xc_remote}
-\alias{ss_query}
 \title{Create Local XC DB Connection}
 \keyword{internal}
 \description{
@@ -13,6 +11,6 @@ These objects are imported from other packages. Follow the links
 below to see their documentation.
 
 \describe{
-  \item{statskier2}{\code{\link[statskier2]{db_xc_local}}, \code{\link[statskier2]{db_xc_remote}}, \code{\link[statskier2]{ss_query}}}
+  \item{statskier2}{\code{\link[statskier2]{db_xc_local}}}
 }}
 

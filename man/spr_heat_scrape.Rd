@@ -4,7 +4,7 @@
 \alias{spr_heat_scrape}
 \title{Scrape WC Sprint Heat Times}
 \usage{
-spr_heat_scrape()
+spr_heat_scrape(url, race)
 }
 \description{
 Scrape WC Sprint Heat Times
