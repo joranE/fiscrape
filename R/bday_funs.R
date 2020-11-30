@@ -42,7 +42,7 @@ lookup_skier_bday <- function(compid){
 
 #' @export
 missing_bday <- function(skier_data,conl){
-  src_skier <- tbl(conl,"skier")
+  src_skier <- tbl(conl,dbplyr::in_schema(options()$fiscrape.schema,"skier"))
   no_bday <- src_skier %>%
     filter(compid %in% local(skier_data$compid) & is.na(birth_date)) %>%
     collect()
@@ -68,13 +68,15 @@ update_bdays <- function(skier_list,conl){
       skier_list_update <- skier_list_update %>%
         mutate(bday_check_date = as.character(Sys.Date())) %>%
         select(compid,birth_date,bday_check_date)
-      RSQLite::dbBegin(conl,name = "bday1")
-      q <- "update skier set birth_date = $birth_date,bday_check_date = $bday_check_date where compid = $compid"
-      rs <- RSQLite::dbSendStatement(conl,q)
-      RSQLite::dbBind(rs,params = skier_list_update)
-      rows_aff <- RSQLite::dbGetRowsAffected(rs)
-      RSQLite::dbClearResult(rs)
-      RSQLite::dbCommit(conl,name = "bday1")
+      # Rpostgres doesn't do named params
+      skier_list_update <- unname(as.list(skier_list_update))
+      #RPostgres::dbBegin(conl,name = "bday1")
+      q <- "update skier set birth_date = $1,bday_check_date = $2 where compid = $3"
+      rs <- RPostgres::dbSendStatement(conl,q)
+      RPostgres::dbBind(rs,params = skier_list_update)
+      rows_aff <- RPostgres::dbGetRowsAffected(rs)
+      RPostgres::dbClearResult(rs)
+      #RPostgres::dbCommit(conl,name = "bday1")
     }
   }else {
     browser()

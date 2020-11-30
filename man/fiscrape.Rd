@@ -4,7 +4,7 @@
 \alias{fiscrape}
 \title{Run the screen scraper}
 \usage{
-fiscrape(update_bdays = FALSE, debug = FALSE)
+fiscrape(update_bdays = FALSE, debug = FALSE, schema = "public")
 }
 \arguments{
 \item{update_bdays}{boolean}

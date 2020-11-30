@@ -1,6 +1,6 @@
 library(dplyr)
 library(RSQLite)
-con <- RSQLite::dbConnect(RSQLite::SQLite(),
+con <- RPostgres::dbConnect(RPostgres::SQLite(),
                            dbname = "~/Dropbox/new-results-db/output/fis_results_prototype.db")
 src_skier <- tbl(conl,"skier")
 src_event <- tbl(conl,"v_event")

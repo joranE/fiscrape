@@ -1,6 +1,7 @@
+#' @importFrom bit64 as.integer64
 #' @export
-process_skiers <- function(skier_list,conn,update_bdays){
-  src_skier <- tbl(conl,"skier")
+process_skiers <- function(skier_list,update_bdays){
+  src_skier <- tbl(conl,dbplyr::in_schema(options()$fiscrape.schema,"skier"))
   
   if (update_bdays){
     min_chk_date <- as.character(Sys.Date() - 365)
@@ -18,28 +19,36 @@ process_skiers <- function(skier_list,conn,update_bdays){
       chk_dates <- skier_list_no_bday %>%
         select(compid) %>%
         mutate(bday_check_date = as.character(Sys.Date()))
+      # RPostgres doesn't do named parameters
+      chk_dates <- unname(as.list(chk_dates))
       DBI::dbWithTransaction(conl,{
-        q <- "update skier set bday_check_date = $bday_check_date where compid = $compid"
-        rs <- RSQLite::dbSendStatement(conl,q)
-        RSQLite::dbBind(rs,params = chk_dates)
-        rows_aff <- RSQLite::dbGetRowsAffected(rs)
-        RSQLite::dbClearResult(rs)
+        q <- "update skier set bday_check_date = $1 where compid = $2"
+        rs <- RPostgres::dbSendStatement(conl,q)
+        RPostgres::dbBind(rs,params = chk_dates)
+        rows_aff <- RPostgres::dbGetRowsAffected(rs)
+        RPostgres::dbClearResult(rs)
       })
     }
   }
   skier_list <- skier_list %>%
-    mutate(compid = as.integer(compid),
+    mutate(compid = bit64::as.integer64(compid),
            fisid = as.character(fisid),
            name = as.character(name),
-           yob = as.integer(yob))
+           yob = bit64::as.integer64(yob))
+  # Potentially new athletes, some may just have name/yob variants
   new_skiers <- anti_join(skier_list,
                           src_skier,
-                          by = c("compid","fisid","name","yob"),copy = TRUE) 
+                          by = c("compid","fisid","name","yob"),
+                          copy = TRUE) 
 
   if (nrow(new_skiers) > 0){
     new_skiers <- new_skiers %>%
       mutate(new = FALSE)
     
+    # Loop thru possibly new athletes, 
+    # find potential matches in skier table
+    # and update info as needed, or just use
+    # existing record from skier table
     for (i in seq_len(nrow(new_skiers))){
       row <- new_skiers[i,]
       cap_name <- stringr::str_extract(string = new_skiers$name[i],"^[-A-Z]+")
@@ -95,6 +104,7 @@ process_skiers <- function(skier_list,conn,update_bdays){
       print(true_new_skiers)
       message("Saving these skiers to insert.")
     }else{
+      # No new athletes found in skier table
       true_new_skiers <- data.frame(compid = integer(0),
                                     fisid = character(0),
                                     name = character(0),

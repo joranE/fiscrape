@@ -1,14 +1,23 @@
 #' @export
-delete_event <- function(eventid){
+delete_event <- function(eventid,schema = "public"){
+  options(fiscrape.schema = schema)
+  on.exit(expr = options(fiscrape.schema = "public"))
+  
+  schema <- options()$fiscrape.schema
+  v_ev <- dplyr::tbl(src = conl,dbplyr::in_schema(schema,"v_event"))
+  
   for (i in seq_along(eventid)){
-    event_info <- RSQLite::dbGetQuery(conl,sprintf("select * from v_event where eventid = %s",eventid[i]))
+    event_info <- v_ev %>%
+      filter(eventid == local(eventid[i])) %>%
+      collect()
     if (nrow(event_info) == 0){
       message("Event with eventid ",eventid[i]," not found.")
       next
     }
     event_type <- event_info$event_type
     print(event_info)
-    m <- readline(prompt = "Delete this event (y/n)?")
+    pr <- sprintf("Delete this event from the schema '%s' (y/n)?",options()$fiscrape.schema)
+    m <- readline(prompt = pr)
     if (m != "y"){
       message("Skipping...")
       next
@@ -26,52 +35,40 @@ delete_event <- function(eventid){
 }
 
 delete_event_dst <- function(eventid){
-  rs <- RSQLite::dbSendStatement(conl,sprintf("delete from event_url where eventid = %s",eventid))
+  d1 <- "delete from %s.dst_event where eventid = %s"
+  d2 <- "delete from %s.all_event where eventid = %s"
+  d3 <- "delete from %s.event_tag where eventid = %s"
+  
+  rs <- RPostgres::dbSendStatement(conl,sprintf(d1,options()$fiscrape.schema,eventid))
   dbClearResult(rs)
-  rs <- RSQLite::dbSendStatement(conl,sprintf("delete from event_penalty where eventid = %s",eventid))
+  rs <- RPostgres::dbSendStatement(conl,sprintf(d2,options()$fiscrape.schema,eventid))
   dbClearResult(rs)
-  rs <- RSQLite::dbSendStatement(conl,sprintf("delete from dst_pur_link where eventid = %s",eventid))
-  dbClearResult(rs)
-  rs <- RSQLite::dbSendStatement(conl,sprintf("delete from dst_pur_comb_times where pur_eventid = %s",eventid))
-  dbClearResult(rs)
-  rs <- RSQLite::dbSendStatement(conl,sprintf("delete from dst_splits where eventid = %s",eventid))
-  dbClearResult(rs)
-  rs <- RSQLite::dbSendStatement(conl,sprintf("delete from dst_result where eventid = %s",eventid))
-  dbClearResult(rs)
-  rs <- RSQLite::dbSendStatement(conl,sprintf("delete from dst_event where eventid = %s",eventid))
-  dbClearResult(rs)
-  rs <- RSQLite::dbSendStatement(conl,sprintf("delete from all_event where eventid = %s",eventid))
+  rs <- RPostgres::dbSendStatement(conl,sprintf(d3,options()$fiscrape.schema,eventid))
   dbClearResult(rs)
 }
 
 delete_event_spr <- function(eventid){
-  rs <- RSQLite::dbSendStatement(conl,sprintf("delete from event_url where eventid = %s",eventid))
+  d1 <- "delete from %s.spr_event where eventid = %s"
+  d2 <- "delete from %s.all_event where eventid = %s"
+  d3 <- "delete from %s.event_tag where eventid = %s"
+  
+  rs <- RPostgres::dbSendStatement(conl,sprintf(d1,options()$fiscrape.schema,eventid))
   dbClearResult(rs)
-  rs <- RSQLite::dbSendStatement(conl,sprintf("delete from spr_fin_result where eventid = %s",eventid))
+  rs <- RPostgres::dbSendStatement(conl,sprintf(d2,options()$fiscrape.schema,eventid))
   dbClearResult(rs)
-  rs <- RSQLite::dbSendStatement(conl,sprintf("delete from spr_qual_result where eventid = %s",eventid))
-  dbClearResult(rs)
-  rs <- RSQLite::dbSendStatement(conl,sprintf("delete from spr_fin_heats where eventid = %s",eventid))
-  dbClearResult(rs)
-  rs <- RSQLite::dbSendStatement(conl,sprintf("delete from spr_event where eventid = %s",eventid))
-  dbClearResult(rs)
-  rs <- RSQLite::dbSendStatement(conl,sprintf("delete from all_event where eventid = %s",eventid))
+  rs <- RPostgres::dbSendStatement(conl,sprintf(d3,options()$fiscrape.schema,eventid))
   dbClearResult(rs)
 }
 
 delete_event_stg <- function(eventid){
-  rs <- RSQLite::dbSendStatement(conl,sprintf("delete from event_url where eventid = %s",eventid))
+  d1 <- "delete from %s.stg_event where eventid = %s"
+  d2 <- "delete from %s.all_event where eventid = %s"
+  d3 <- "delete from %s.event_tag where eventid = %s"
+  
+  rs <- RPostgres::dbSendStatement(conl,sprintf(d1,options()$fiscrape.schema,eventid))
   dbClearResult(rs)
-  rs <- RSQLite::dbSendStatement(conl,sprintf("delete from event_penalty where eventid = %s",eventid))
+  rs <- RPostgres::dbSendStatement(conl,sprintf(d2,options()$fiscrape.schema,eventid))
   dbClearResult(rs)
-  rs <- RSQLite::dbSendStatement(conl,sprintf("delete from stg_event_link where ov_eventid = %s",eventid))
-  dbClearResult(rs)
-  rs <- RSQLite::dbSendStatement(conl,sprintf("delete from stg_race_link where ov_eventid = %s",eventid))
-  dbClearResult(rs)
-  rs <- RSQLite::dbSendStatement(conl,sprintf("delete from stg_result where eventid = %s",eventid))
-  dbClearResult(rs)
-  rs <- RSQLite::dbSendStatement(conl,sprintf("delete from stg_event where eventid = %s",eventid))
-  dbClearResult(rs)
-  rs <- RSQLite::dbSendStatement(conl,sprintf("delete from all_event where eventid = %s",eventid))
+  rs <- RPostgres::dbSendStatement(conl,sprintf(d3,options()$fiscrape.schema,eventid))
   dbClearResult(rs)
 }

@@ -24,14 +24,28 @@ spr_heat_scrape <- function(url,race){
            time = gsub("^LL","",time),
            time = stringr::str_trim(time,side = "both"),
            time = if_else(time %in% c("DNF","DNS","RAL","DSQ"),"",time)) %>%
-    mutate(time = fiscrape::time_to_seconds(time)) %>%
+    mutate(time = time_to_seconds(time)) %>%
     select(-rank) %>%
     rename(heat_time = time)
   
-  spr_heats_clean <- spr_heats_clean %>%
-    left_join(select(race,eventid,compid,name),by = "name") %>%
-    select(-name,-nation) %>%
-    select(eventid,compid,everything())
+  #Check for mismatched names
+  race_names <- select(race,eventid,compid,name)
+  name_check <- spr_heats_clean %>%
+    left_join(race_names,by = "name") %>%
+    mutate(eventid = race$eventid[1]) %>%
+    dplyr::mutate_if(.predicate = bit64::is.integer64,.funs = as.integer)
+  if (any(is.na(name_check$compid))){
+    print(arrange(race_names,name))
+    name_check <- edit(name = name_check)
+    spr_heats_clean <- name_check %>%
+      select(-name,-nation) %>%
+      select(eventid,compid,everything())
+  } else {
+    spr_heats_clean <- spr_heats_clean %>%
+      left_join(race_names,by = "name") %>%
+      select(-name,-nation) %>%
+      select(eventid,compid,everything())
+  }
   
   spr_heats_clean <- spr_heats_clean %>%
     select(eventid,compid,heat,everything())

@@ -1,8 +1,10 @@
+#' @importFrom tidyr unnest
 #' @export
 recalc_dst_pts <- function(){
-  src_dst <- tbl(src = conl,"v_distance")
-  src_dst_maj_int <- tbl(src = conl,"v_distance_maj_int")
+  src_dst <- tbl(src = conl,dbplyr::in_schema(options()$fiscrape.schema,"v_distance"))
+  src_dst_maj_int <- tbl(src = conl,dbplyr::in_schema(options()$fiscrape.schema,"v_distance_maj_int"))
   
+  message("Gathering data...")
   raw_dst_races <- src_dst %>%
     filter(!is.na(time)) %>%
     arrange(season,date,eventid) %>%
@@ -20,18 +22,20 @@ recalc_dst_pts <- function(){
     mutate(maj_int = if_else(primary_tag %in% c("wc","wsc","owg","tds"),"Y","N")) %>%
     filter(!is.na(pb_med_scl))
   
-  pts_hist <- all_dst_races %>%
+  pts_hist <<- all_dst_races %>%
     mutate(event_type = "Distance") %>%
-    select(season,gender,event_type,date,eventid,cat1,fisid,rank,pb_med_adj)
+    select(season,gender,event_type,date,eventid,primary_tag,fisid,rank,pb_med_adj)
   
+  message("Calculating penalties...")
   dst_nst <- all_dst_races %>%
     mutate(date2 = date,
            eventid2 = eventid) %>%
     arrange(season,date2,eventid2) %>%
     group_nest(season,date2,eventid2) %>%
-    mutate(data = map(.x = data,.f = add_race_pen,.event_type = "Distance"))
+    mutate(data = purrr::map(.x = data,.f = add_race_pen,.event_type = "Distance"))
   
-  dst <- unnest(dst_nst,data) %>%
+  message("Cleaning up...")
+  dst <- tidyr::unnest(dst_nst,data) %>%
     as.data.frame()
   dst_sd_pen <- dst %>%
     filter(maj_int == "Y" | season >= "1992-1993") %>%
@@ -41,11 +45,13 @@ recalc_dst_pts <- function(){
   dst_sd_pen
 }
 
+#' @importFrom purrr map
 #' @export
 recalc_spr_pts <- function(){
-  src_spr <- tbl(src = conl,"v_sprint")
-  src_spr_maj_int <- tbl(src = conl,"v_sprint_maj_int")
+  src_spr <- tbl(src = conl,dbplyr::in_schema(options()$fiscrape.schema,"v_sprint"))
+  src_spr_maj_int <- tbl(src = conl,dbplyr::in_schema(options()$fiscrape.schema,"v_sprint_maj_int"))
   
+  message("Gathering data...")
   raw_spr_races <- src_spr %>%
     filter(!is.na(time)) %>%
     arrange(season,date,eventid) %>%
@@ -63,18 +69,20 @@ recalc_spr_pts <- function(){
     mutate(maj_int = if_else(primary_tag %in% c("wc","wsc","owg","tds"),"Y","N")) %>%
     filter(!is.na(pb_med_scl))
   
-  pts_hist <- all_spr_races %>%
+  pts_hist <<- all_spr_races %>%
     mutate(event_type = "Sprint") %>%
-    select(season,gender,event_type,date,eventid,cat1,fisid,rank,pb_med_adj)
+    select(season,gender,event_type,date,eventid,primary_tag,fisid,rank,pb_med_adj)
   
+  message("Calculating penalties...")
   spr_nst <- all_spr_races %>%
     mutate(date2 = date,
            eventid2 = eventid) %>%
     arrange(season,date2,eventid2) %>%
     group_nest(season,date2,eventid2) %>%
-    mutate(data = map(.x = data,.f = add_race_pen,.event_type = "Sprint"))
+    mutate(data = purrr::map(.x = data,.f = add_race_pen,.event_type = "Sprint"))
   
-  spr <- unnest(spr_nst,data) %>%
+  message("Cleaning up...")
+  spr <- tidyr::unnest(spr_nst,data) %>%
     as.data.frame()
   spr_sd_pen <- spr %>%
     filter(maj_int == "Y" | season >= "1992-1993") %>%
@@ -87,19 +95,23 @@ recalc_spr_pts <- function(){
 #' @export
 insert_recalc_med_pts <- function(dst,spr){
   all_pens <- bind_rows(dst,spr)
-  RSQLite::dbWriteTable(conl,
-                        name = "event_penalty",
-                        value = all_pens,
-                        row.names = FALSE,
-                        overwrite = TRUE)
+  all_pens_param <- unname(as.list(all_pens))
+  q <- "insert into event_penalty (eventid,pbm_sd,penalty) 
+        values ($1,$2,$3) on conflict (eventid) do update set pbm_sd = EXCLUDED.pbm_sd,penalty = EXCLUDED.penalty"
+  dbWithTransaction(conl,{
+    rs <- dbSendStatement(conl,q)
+    dbBind(rs,params = all_pens_param)
+    ra <- dbGetRowsAffected(rs)
+    dbClearResult(rs)
+  })
 }
 
 adj_mean <- function(x,adj = c(1.4,1.3,1.2,1.1,1)){
   mean(x) * adj[length(x)]
 }
 
+#' @export
 add_race_pen <- function(race,.event_type){
-  pb$tick()
   race_tag <- race$primary_tag[1]
   maj_int_tag <- c("wc","owg","wsc","tds")
   
@@ -131,11 +143,11 @@ add_race_pen <- function(race,.event_type){
                !is.na(pb_med_adj)) %>%
       group_by(fisid) %>%
       top_n(n = 5,wt = date)
-    pen_skier_hist_maj_int <- filter(pen_skier_hist,cat1 %in% maj_int_cat1)
+    pen_skier_hist_maj_int <- filter(pen_skier_hist,primary_tag %in% maj_int_tag)
     
     pen_values <- c(pen_skier_hist$pb_med_adj,pen_skier_hist_maj_int$pb_med_adj)
     
-    n_maj_int <- sum(pen_skier_hist$cat1 %in% maj_int_cat1)
+    n_maj_int <- sum(pen_skier_hist$primary_tag %in% maj_int_tag)
     
     if (nrow(pen_skier_hist) == 0 | all(is.na(pen_values))){
       race_penalty <- 4
@@ -150,7 +162,7 @@ add_race_pen <- function(race,.event_type){
   race$penalty <- race_penalty
   race$n_maj_int <- n_maj_int
   race$pb_med_adj <- race$pb_med_scl + race_penalty
-  
+
   pts_hist$penalty[pts_hist$eventid == race$eventid[1]] <<- race_penalty
   pts_hist$pb_med_adj[pts_hist$eventid == race$eventid[1]] <<- race$pb_med_scl + race_penalty
   

@@ -9,11 +9,12 @@ Imports:
     xml2,
     dplyr,
     stringr,
-    statskier2
+    statskier2,
+    RPostgres
 Date: 2015-07-02
 Author: Joran Elias
 Maintainer: Joran Elias <statisticalskier@gmail.com>
 Description: What you think.
 Encoding: UTF-8
 License: GPL
-RoxygenNote: 7.1.0
+RoxygenNote: 7.1.1

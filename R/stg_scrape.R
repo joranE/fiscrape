@@ -8,7 +8,7 @@ stg_scrape <- function(url,event_info,event_type){
   compids <- page %>% 
     html_nodes(xpath = "//*[contains(@data-link,'athlete-biography')]") %>% 
     html_attrs() %>%
-    map(.x = .,.f = magrittr::extract2,"data-link") %>%
+    purrr::map(.x = .,.f = magrittr::extract2,"data-link") %>%
     stringr::str_extract("competitorid=[0-9]+") %>%
     stringr::str_replace("competitorid=","") %>%
     trim_compids()
@@ -17,7 +17,7 @@ stg_scrape <- function(url,event_info,event_type){
     compids <- page %>% 
       html_nodes(xpath = "//*[contains(@href,'athlete-biography')]") %>% 
       html_attrs() %>%
-      map(.x = .,.f = magrittr::extract2,"href") %>%
+      purrr::map(.x = .,.f = magrittr::extract2,"href") %>%
       stringr::str_extract("competitorid=[0-9]+") %>%
       stringr::str_replace("competitorid=","") %>%
       trim_compids()
@@ -26,7 +26,7 @@ stg_scrape <- function(url,event_info,event_type){
   # All rows with sanctions
   page_tbl <- page %>%
     html_nodes(css = ".g-row.justify-sb,.g-xs-24.bold,.g-xs-24.container") %>%
-    map(.f = row_text_extractor)
+    purrr::map(.f = row_text_extractor)
   
   #Remove garbarge leading rows, start with row beginning with 'Rank'
   first_row <- min(which(sapply(page_tbl,function(x) x[1] == "Rank")))
@@ -36,11 +36,11 @@ stg_scrape <- function(url,event_info,event_type){
   # All rows without sanctions
   race <- page %>%
     html_nodes(css = ".g-row.justify-sb") %>%
-    map(.f = row_text_extractor)
-  cn <- keep(race,function(x) x[1] == "Rank")[[1]]
+    purrr::map(.f = row_text_extractor)
+  cn <- purrr::keep(race,function(x) x[1] == "Rank")[[1]]
   race <- race %>%
-    keep(~length(.) >= 5) %>%
-    map(.f = function(x) setNames(x,cn[1:length(x)]))
+    purrr::keep(~length(.) >= 5) %>%
+    purrr::map(.f = function(x) setNames(x,cn[1:length(x)]))
   race <- race[-1]
   race <- race %>%
     setNames(.,compids)
@@ -91,6 +91,7 @@ stg_scrape <- function(url,event_info,event_type){
            cat1 = event_info[["cat1"]],
            cat2 = event_info[["cat2"]],
            location = event_info[["location"]],
+           site = NA_character_,
            gender = event_info[["gender"]],
            format = event_info[["format"]],
            tech = event_info[["tech"]],
@@ -109,9 +110,23 @@ stg_scrape <- function(url,event_info,event_type){
   event <- race %>%
     select(eventid,season,date,cat1,cat2,gender,length,tech) %>%
     distinct()
+  event_tags1 <- data.frame(eventid = race$eventid[1],
+                            tag = event_info[["primary_tag"]],
+                            primary_tag = "Y")
+  n_tags <- length(event_info[["other_tags"]])
+  if (n_tags > 0){
+    event_tags2 <- data.frame(eventid = rep(race$eventid[1],n_tags),
+                              tag = event_info[["other_tags"]],
+                              primary_tag = rep("N",n_tags))
+    event_tags <- dplyr::bind_rows(event_tags1,
+                                   event_tags2)
+  } else {
+    event_tags <- event_tags1
+  }
   result <- race %>%
     select(eventid,compid,nation,rank,time,pb,pbm,pbm_sd,fispoints,notes)
   return(list(event = event,
+              event_tags = event_tags,
               skier = skier,
               result = result))
 }

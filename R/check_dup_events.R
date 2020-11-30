@@ -1,6 +1,6 @@
 #' @export
 dst_dup <- function(){
-  v_dst <- tbl(src = conl,"v_distance")
+  v_dst <- tbl(src = conl,dbplyr::in_schema(options()$fiscrape.schema,"v_distance"))
   sec_plc <- v_dst %>%
     filter(!is.na(rank) & rank == 2 & !is.na(time)) %>%
     select(eventid,compid,fisid,rank,time,fispoints) %>%
@@ -43,7 +43,7 @@ dst_dup <- function(){
 
 #' @export
 spr_dup <- function(){
-  v_dst <- tbl(src = conl,"v_sprint")
+  v_dst <- tbl(src = conl,dbplyr::in_schema(options()$fiscrape.schema,"v_sprint"))
   sec_plc <- v_dst %>%
     filter(!is.na(rankqual) & rankqual == 2 & !is.na(time)) %>%
     select(eventid,compid,fisid,rankqual,time,fispoints) %>%

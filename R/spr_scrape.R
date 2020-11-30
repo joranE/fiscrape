@@ -34,6 +34,9 @@ spr_final_scrape <- function(event_info,idx,override_eventid = NULL){
       trim_compids()
   }
   
+  #Site
+  site <- get_event_site(event_info$url$final[idx])
+  
   # All rows with sanctions
   page_tbl <- page %>%
     html_nodes(css = ".g-row.justify-sb,.g-xs-24.bold,.g-xs-24.container") %>%
@@ -43,7 +46,7 @@ spr_final_scrape <- function(event_info,idx,override_eventid = NULL){
   flag_headers <- function(x) length(x) == 1 && x %in% c("Final","Semifinal","Quarterfinal","Qualification")
   page_tbl <- purrr::discard(.x = page_tbl,.p = flag_headers)
   
-  #Remove garbarge leading rows, start with row beginning with 'Rank'
+  #Remove garbage leading rows, start with row beginning with 'Rank'
   first_row <- min(which(sapply(page_tbl,function(x) x[1] == "Rank")))
   page_tbl <- page_tbl[first_row:length(page_tbl)]
   any_notes <- any(lengths(page_tbl) == 1)
@@ -54,8 +57,8 @@ spr_final_scrape <- function(event_info,idx,override_eventid = NULL){
     map(.f = row_text_extractor)
   cn <- keep(race,function(x) x[1] == "Rank")[[1]]
   race <- race %>%
-    keep(~length(.) >= 5) %>%
-    map(.f = function(x) setNames(x,cn[1:length(x)]))
+    purrr::keep(~length(.) >= 5) %>%
+    purrr::map(.f = function(x) setNames(x,cn[1:length(x)]))
   race <- race[-1]
   race <- race %>%
     setNames(.,compids)
@@ -121,6 +124,7 @@ spr_final_scrape <- function(event_info,idx,override_eventid = NULL){
            cat2 = event_info[["cat2"]],
            spr_fin_cat = event_info$url$cat[idx],
            location = event_info[["location"]],
+           site = site,
            gender = event_info[["gender"]],
            tech = event_info[["tech"]],
            length = event_info[["length"]]) 
@@ -135,11 +139,25 @@ spr_final_scrape <- function(event_info,idx,override_eventid = NULL){
            yob = as.integer(yob),
            birth_date = NA_character_)
   event <- race %>%
-    select(eventid,season,date,location,cat1,cat2,gender,length,tech) %>%
+    select(eventid,season,date,location,site,cat1,cat2,gender,length,tech) %>%
     distinct()
+  event_tags1 <- data.frame(eventid = race$eventid[1],
+                            tag = event_info[["primary_tag"]],
+                            primary_tag = "Y")
+  n_tags <- length(event_info[["other_tags"]])
+  if (n_tags > 0){
+    event_tags2 <- data.frame(eventid = rep(race$eventid[1],n_tags),
+                              tag = event_info[["other_tags"]],
+                              primary_tag = rep("N",n_tags))
+    event_tags <- dplyr::bind_rows(event_tags1,
+                                   event_tags2)
+  } else {
+    event_tags <- event_tags1
+  }
   result <- race %>%
     select(eventid_sf,eventid,spr_fin_cat,compid,nation,rank,notes)
   return(list(event = event,
+              event_tags = event_tags,
               skier = skier,
               result = result,
               race = race))

@@ -15,26 +15,28 @@ gather_event_info <- function(){
     # LOCATION
     location <- toupper(readline(prompt = "Location: "))
     
-    # CAT1 - CAT2
-    cat1 <- ""
-    while (cat1 == ""){
-      cat1 <- toupper(readline(prompt = "Cat1: "))
+    # Event tags
+    primary_tag <- ""
+    while (primary_tag == ""){
+      primary_tag <- toupper(readline(prompt = "Primary tag: "))
     }
-    cat2 <- toupper(readline(prompt = "Cat2: "))
+    other_tags <- toupper(readline(prompt = "Other tags: "))
     
-    if (cat2 == "JUNIOR"){
-      cat2 <- "Junior"
+    if (toupper(other_tags) %in% c("NA","")){
+      other_tags <- NULL
     }
-    if (toupper(cat2) %in% c("NA","")){
-      cat2 <- NA_character_
-    }
+    
+    primary_tag <- tolower(primary_tag)
+    other_tags_list <- unlist(strsplit(x = tolower(other_tags),split = ","))
     
     # EVENT TYPE
-    type <- switch(menu(c("Distance","Sprint","Stage")),"Distance","Sprint","Stage")
+    type <- switch(menu(c("Distance","Sprint","Stage")),
+                   "Distance","Sprint","Stage")
     
     # EVENT FORMAT
     if (type == "Distance"){
-      format <- switch(menu(c("Interval","Mass","Skiathlon","Pursuit","Pursuit Break")),"Interval","Mass","Skiathlon","Pursuit","Pursuit Break")
+      format <- switch(menu(c("Interval","Mass","Skiathlon","Pursuit","Pursuit Break")),
+                       "Interval","Mass","Skiathlon","Pursuit","Pursuit Break")
     }else{
       format <- NA_character_
     }
@@ -67,18 +69,19 @@ gather_event_info <- function(){
       # LINKED PURSUIT EVENT
       if (!is.na(format) && format %in% c("Pursuit","Pursuit Break")){
         min_dt <- as.character(as.Date(dt) - 2)
-        src_event <- tbl(conl,"v_event")
+        src_event <- tbl(conl,dbplyr::in_schema(options()$fiscrape.schema,"v_event"))
         .gender <- gender
-        .cat1 <- cat1
+        .primary_tag <- primary_tag
         potential_pur <- src_event %>%
           filter(date >= min_dt & 
                    date <= dt & 
                    event_type != "Stage" & 
                    gender == .gender & 
-                   cat1 == .cat1 & 
+                   primary_tag == .primary_tag & 
                    format != "Pursuit") %>%
-          select(eventid,date,location,cat1,cat2,length,tech,format) %>%
+          select(eventid,date,location,site,primary_tag,length,tech,format) %>%
           collect() %>%
+          mutate_if(.predicate = bit64::is.integer64,.funs = as.integer) %>%
           arrange(date)
         print(potential_pur)
         
@@ -99,9 +102,6 @@ gather_event_info <- function(){
       
       url <- list(url = url,
                   live_url = live_url)
-      # if (grepl(pattern = "^https",x = url)){
-      #   url <- gsub(pattern = "^https",replacement = "http",x = url)
-      # }
     }else{
       url_spr_qual <- readline(prompt = "Qualification URL: ")
       if (url_spr_qual == "") url_spr_qual <- NA_character_
@@ -133,18 +133,6 @@ gather_event_info <- function(){
         spr_fin_cat <- NA_character_
       }
       
-      # if (grepl(pattern = "^https",x = url_spr_qual)){
-      #   url_spr_qual <- gsub(pattern = "^https",
-      #                   replacement = "http",
-      #                   x = url_spr_qual)
-      # }
-      # 
-      # if (grepl(pattern = "^https",x = url_spr_fin)){
-      #   url_spr_fin <- gsub(pattern = "^https",
-      #                  replacement = "http",
-      #                  x = url_spr_fin)
-      # }
-      
       url <- list(qual = url_spr_qual,
                   final = url_spr_fin,
                   heats = url_spr_fin_heat,
@@ -159,16 +147,16 @@ gather_event_info <- function(){
       # -cat1
       # or cat2 = SWC or STG
       min_dt <- as.character(as.Date(dt) - 14)
-      src_event <- tbl(conl,"v_event")
+      src_event <- tbl(conl,dbplyr::in_schema(options()$fiscrape.schema,"v_event"))
       .gender <- gender
-      .cat1 <- cat1
+      .primary_tag <- primary_tag
       potential_stg <- src_event %>%
         filter(date >= min_dt & 
                  date <= dt & 
                  event_type != "Stage" & 
                  gender == .gender & 
-                 cat1 == .cat1) %>%
-        select(eventid,date,location,cat1,cat2,length,tech,format) %>%
+                 primary_tag == .primary_tag) %>%
+        select(eventid,date,location,site,primary_tag,length,tech,format) %>%
         collect() %>%
         arrange(date)
       print(potential_stg)
@@ -186,8 +174,10 @@ gather_event_info <- function(){
       }
     }
     
-    event_info <- list(cat1 = cat1,
-                       cat2 = cat2,
+    event_info <- list(primary_tag = primary_tag,
+                       other_tags = other_tags_list,
+                       cat1 = primary_tag,
+                       cat2 = NA_character_,
                        location = location,
                        type = type,
                        format = format,
@@ -200,15 +190,15 @@ gather_event_info <- function(){
                        linked_stages = linked_stg_eventid)
     
     cat("\n\nIs this correct?\n")
-    cat("\nCat1      =",event_info$cat1)
-    cat("\nCat2      =",event_info$cat2)
-    cat("\nLocation  =",event_info$location)
-    cat("\nDate      =",event_info$date)
-    cat("\nGender    =",event_info$gender)
-    cat("\nType      =",event_info$type)
-    cat("\nFormat    =",event_info$format)
-    cat("\nTechnique =",event_info$tech)
-    cat("\nLength    =",event_info$length)
+    cat("\nPrimary tag =",event_info$primary_tag)
+    cat("\nOther tags  =",event_info$other_tags)
+    cat("\nLocation    =",event_info$location)
+    cat("\nDate        =",event_info$date)
+    cat("\nGender      =",event_info$gender)
+    cat("\nType        =",event_info$type)
+    cat("\nFormat      =",event_info$format)
+    cat("\nTechnique   =",event_info$tech)
+    cat("\nLength      =",event_info$length)
     
     if (type != "Sprint"){
       cat("\nURL       =",event_info$url$url)

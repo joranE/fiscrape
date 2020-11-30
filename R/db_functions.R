@@ -1,8 +1,12 @@
-#' Create Local XC DB Connection
-#'
-#' @import RSQLite
-#' @importFrom statskier2 db_xc_local
 #' @export
-statskier2::db_xc_local
-
-
+fiscrape_connect <- function(){
+  con_info <- options()$statskier_pg_admin
+  cn <- RPostgres::dbConnect(RPostgres::Postgres(),
+                              host = con_info$host,
+                              dbname = con_info$dbname,
+                              user = con_info$user,
+                              password = con_info$password,
+                              port = con_info$port,
+                              sslmode = con_info$sslmode)
+  assign(x = "conl",value = cn,envir = .GlobalEnv)
+}

@@ -60,7 +60,7 @@ dst_split_scrape <- function(url,race){
            split_km = if_else(split_unit == "m",split_km / 1000,split_km)) %>%
     select(-split_unit) %>%
     mutate(split_time = if_else(grepl(pattern = "[a-zA-Z]",split_time),"",split_time)) %>%
-    mutate(split_time = fiscrape::time_to_seconds(split_time)) %>%
+    mutate(split_time = time_to_seconds(split_time)) %>%
     mutate(split_rank = as.integer(split_rank))
   
   all_splits <- all_splits %>%

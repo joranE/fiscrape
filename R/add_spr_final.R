@@ -1,6 +1,6 @@
 add_spr_final <- function(){
-  src_spr_ev <- tbl(conl,"spr_event")
-  src_spr_fin <- tbl(conl,"spr_fin_result")
+  src_spr_ev <- tbl(conl,dbplyr::in_schema(options()$fiscrape.schema,"spr_event"))
+  src_spr_fin <- tbl(conl,dbplyr::in_schema(options()$fiscrape.schema,"spr_fin_result"))
   .eventid <- readline(prompt = "Spr eventid: ")
   .eventid <- as.integer(.eventid)
   

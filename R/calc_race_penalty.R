@@ -9,7 +9,7 @@ dst_race_penalty <- function(result_data,event_date){
              rank <= med_rnk_idx_bot)
   
   #This won't work until db is pre-seeded with pbm_pts column & values
-  pen_skier_hist <- tbl(conl,"v_distance") %>%
+  pen_skier_hist <- tbl(conl,dbplyr::in_schema(options()$fiscrape.schema,"v_distance")) %>%
     filter(compid %in% local(pen_skiers$compid) & 
              date < event_date & 
              !is.na(pbm_pts)) %>%
@@ -40,7 +40,7 @@ spr_race_penalty <- function(result_data,event_date){
              rank <= med_rnk_idx_bot)
   
   #This won't work until db is pre-seeded with pbm_pts column & values
-  pen_skier_hist <- tbl(conl,"v_sprint") %>%
+  pen_skier_hist <- tbl(conl,dbplyr::in_schema(options()$fiscrape.schema,"v_sprint")) %>%
     filter(compid %in% local(pen_skiers$compid) & 
              date < event_date & 
              !is.na(pbm_pts)) %>%
