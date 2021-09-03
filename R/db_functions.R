@@ -9,4 +9,5 @@ fiscrape_connect <- function(){
                               port = con_info$port,
                               sslmode = con_info$sslmode)
   assign(x = "conl",value = cn,envir = .GlobalEnv)
+  message("Connected to statskier db.")
 }
