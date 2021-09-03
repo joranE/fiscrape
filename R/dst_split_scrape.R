@@ -24,6 +24,15 @@ dst_split_scrape <- function(url,race){
     html_attrs() %>%
     unlist() %>%
     unique()
+  
+  time_pts_val <- time_pts_val[!grepl("bonus",time_pts_val)]
+  
+  if (length(time_pts_lab) != length(time_pts_val)){
+    message("Split point values and labels have different lengths. Fixing...")
+    #browser()
+    n <- length(time_pts_val)
+    time_pts_val <- time_pts_val[-c(2,3,n-1)]
+  }
   time_pts <- data.frame(val = time_pts_val,
                          lab = time_pts_lab,stringsAsFactors = F) %>%
     filter(!grepl("^Start|^Bonus",lab))
@@ -33,6 +42,8 @@ dst_split_scrape <- function(url,race){
   chc <- menu(choices = c("Yes","No"),title = "Are these split time points correct?")
   if (chc == 2){
     time_pts <- edit(time_pts)
+    time_pts <- time_pts %>%
+      filter(!is.na(val))
   }
   
   splits <- vector(mode = "list",length = nrow(time_pts))
@@ -46,11 +57,10 @@ dst_split_scrape <- function(url,race){
       splits[[i]] <- html$result %>%
         parse_split_html()
     }else {
-      splits[[i]] <- NULL
+      next
     }
   }
   
-  #browser()
   all_splits <- bind_rows(splits,.id = "split_km") %>%
     mutate(name = stringr::str_trim(name),
            name = stringr::str_squish(name)) %>%
@@ -64,12 +74,41 @@ dst_split_scrape <- function(url,race){
     mutate(split_rank = as.integer(split_rank))
   
   all_splits <- all_splits %>%
-    left_join(select(race,eventid,compid,name),by = "name") %>%
-    select(-name,-nation) %>%
+    rename(split_name = name) %>%
+    left_join(select(race,eventid,compid,race_name = name),by = c("split_name" = "race_name")) %>%
     select(eventid,compid,everything())
   
-  if (any(is.na(all_splits$compid))){
+  if (all(is.na(all_splits$split_km))){
+    message("All split_km values are NA.")
     browser()
+  }
+  
+  if (any(is.na(all_splits$compid))){
+    max_split <- max(all_splits$split_km)
+    all_splits <- split(all_splits,is.na(all_splits$compid))
+    n <- length(all_splits)
+    final_posn <- filter(all_splits[[n]],split_km == max_split)
+    final_posn_race_names <- race %>%
+      filter(rank %in% final_posn$split_rank) %>%
+      select(eventid,compid,rank) %>%
+      left_join(select(final_posn,split_rank,split_name),by = c("rank" = "split_rank")) %>%
+      select(eventid,compid,split_name) %>%
+      filter(!is.na(compid)) %>%
+      distinct()
+    
+    idx <- match(all_splits[[n]]$split_name,final_posn_race_names$split_name)
+    all_splits[[n]]$eventid <- final_posn_race_names$eventid[idx]
+    all_splits[[n]]$compid <- final_posn_race_names$compid[idx]
+    
+    if (any(is.na(all_splits[[n]]$compid))){
+      message("Cannot match the skiers in 'all_splits[[2]]' to compids. They may be DNSs.")
+      browser()
+    }
+    all_splits <- bind_rows(all_splits) %>%
+      select(eventid,compid,split_km,split_rank,split_time)
+  } else {
+    all_splits <- all_splits %>%
+      select(eventid,compid,split_km,split_rank,split_time)
   }
   
   all_splits

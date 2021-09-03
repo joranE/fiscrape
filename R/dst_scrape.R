@@ -152,13 +152,17 @@ dst_scrape <- function(url,event_info,event_type){
            pbm_sd = sd(pbm,na.rm = TRUE),
            pbm_sd = if_else(is.na(time),NA_real_,pbm_sd))
   
-  if (event_type == "Distance"){
-     race_penalty <- dst_race_penalty(result_data = race,event_date = event_info[["date"]])
+  if (event_info[["primary_tag"]] %in% c("wc","tds","wsc","owg")){
+    race_penalty <- 0
   } else {
-     race_penalty <- spr_race_penalty(result_data = race,event_date = event_info[["date"]])
+    if (event_type == "Distance"){
+      race_penalty <- dst_race_penalty(result_data = race,event_date = event_info[["date"]])
+    } else {
+      race_penalty <- spr_race_penalty(result_data = race,event_date = event_info[["date"]])
+    }
   }
   
-  race_pbm_sd <- sd(race$time,na.rm = TRUE)
+  race_pbm_sd <- sd(race$pbm,na.rm = TRUE)
   race_pen_sd <- data.frame(eventid = race$eventid[1],
                             pbm_sd = race_pbm_sd,
                             penalty = race_penalty)

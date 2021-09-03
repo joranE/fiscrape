@@ -77,7 +77,7 @@ enter_new_race <- function(update_bdays = FALSE){
     event_url <- data.frame(eventid_sq = NA_character_,
                             eventid_sf = NA_character_,
                             eventid = stg_data$event$eventid[1],
-                            url_type = "DST",
+                            url_type = "STG",
                             url = event_info$url$url)
     stg_event_link <- data.frame(ov_eventid = rep(stg_data$event$eventid[1],
                                                   times = length(event_info$linked_stages)),
@@ -175,15 +175,28 @@ enter_new_race <- function(update_bdays = FALSE){
     
     skiers <- bind_rows(qual_skiers,bind_rows(fin_skiers)) %>%
       distinct()
+    
+    #Check for duplicated skier ids
+    if (any(duplicated(skiers$compid))){
+      message("Qual & final had different name spellings, removing duplicates...")
+      skiers <- skiers[!duplicated(skiers$compid),]
+    }
     event <- bind_rows(spr_qual_data$event,bind_rows(lapply(spr_fin_data_list,'[[',"event"))) %>%
       select(-format) %>%
       distinct()
     event_tags <- spr_qual_data$event_tags
     
-    spr_url_types <- rep(c("SPQ","SPF"),times = c(1,n_fin))
+    if (n_fin == 0){
+      spr_url_types <- "SPQ"
+      ev_sf <- NA_character_
+    } else {
+      spr_url_types <- rep(c("SPQ","SPF"),times = c(1,n_fin))
+      ev_sf <- c(NA_character_,paste0(event$eventid[1],LETTERS[1:n_fin]))
+    }
+    
     spr_urls <- c(na.omit(c(event_info$url$qual,event_info$url$final)))
     event_url <- data.frame(eventid_sq = rep(paste0("SQ",event$eventid[1]),times = length(spr_urls)),
-                            eventid_sf = c(NA_character_,paste0(event$eventid[1],LETTERS[1:n_fin])),
+                            eventid_sf = ev_sf,
                             eventid = rep(event$eventid[1],times = length(spr_urls)),
                             url_type = spr_url_types,
                             url = spr_urls)

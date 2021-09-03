@@ -15,6 +15,7 @@ spr_heat_scrape <- function(url,race){
   spr_heats_clean <- bind_rows(spr_heats) %>%
     mutate(name = stringr::str_trim(name),
            name = stringr::str_squish(name),
+           nation = stringr::str_squish(nation),
            heat_rank = if_else(rank == "",NA_character_,rank),
            qf = if_else(substr(heat,1,1) == "1",substr(heat,2,2),NA_character_),
            sf = if_else(substr(heat,1,1) == "2",substr(heat,2,2),NA_character_),
@@ -34,12 +35,26 @@ spr_heat_scrape <- function(url,race){
     left_join(race_names,by = "name") %>%
     mutate(eventid = race$eventid[1]) %>%
     dplyr::mutate_if(.predicate = bit64::is.integer64,.funs = as.integer)
+  
   if (any(is.na(name_check$compid))){
     print(arrange(race_names,name))
+    missing_compid <- filter(name_check,is.na(compid))
+    print(missing_compid)
+    message("Fix missing compids.")
     name_check <- edit(name = name_check)
     spr_heats_clean <- name_check %>%
       select(-name,-nation) %>%
-      select(eventid,compid,everything())
+      select(eventid,compid,everything()) %>%
+      filter(!is.na(compid))
+    nh <- nrow(spr_heats_clean)
+    if (nh < 48){
+      chc <- menu(choices = c("Yes","No"),
+                  title = sprintf("Sprint heat data only has %s rows not 48, should we continue?",nh))
+      if (chc == 2){
+        browser()
+        stop("Stopping.")
+      }
+    }
   } else {
     spr_heats_clean <- spr_heats_clean %>%
       left_join(race_names,by = "name") %>%

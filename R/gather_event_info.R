@@ -201,7 +201,7 @@ gather_event_info <- function(){
     cat("\nLength      =",event_info$length)
     
     if (type != "Sprint"){
-      cat("\nURL       =",event_info$url$url)
+      cat("\nURL         =",event_info$url$url)
       if (!is.na(event_info$url$live_url)){
         cat("\nLive URL  =",event_info$url$live_url)
       }
