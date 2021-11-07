@@ -1,5 +1,5 @@
 #' Some documentation
-#' More documentation
+#' More documentation changes
 #' @export
 dst_race_penalty <- function(result_data,event_date){
   med_rnk <- median(result_data$rank,na.rm = TRUE)
