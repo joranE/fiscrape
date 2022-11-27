@@ -56,8 +56,10 @@ dst_scrape <- function(url,event_info,event_type){
   cn <- purrr::keep(race,function(x) x[1] == "Rank")[[1]]
   race <- race %>%
     purrr::keep(~length(.) >= 5) %>%
+    purrr::discard(~grepl("Obstruction|Written|Verbal|Reprimand|Fine|Disqualification",paste(.,collapse = ""))) %>%
     purrr::map(.f = function(x) setNames(x,cn[1:length(x)]))
   race <- race[-1]
+  
   race <- race %>%
     setNames(.,compids)
   race <- bind_rows(!!!race,.id = "compid") %>%
@@ -232,7 +234,7 @@ find_fisid <- function(x){
 build_notes <- function(el,nm){
   fisids <- sapply(el,find_fisid)
   if (nm == "Sanctions"){
-    notes <- sapply(el,tail,1)
+    notes <- sapply(el,function(x) paste(tail(x,2),collapse = "; "))
   }else {
     notes <- rep(nm,length.out = length(fisids))
   }

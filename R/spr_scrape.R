@@ -58,6 +58,7 @@ spr_final_scrape <- function(event_info,idx,override_eventid = NULL){
   cn <- keep(race,function(x) x[1] == "Rank")[[1]]
   race <- race %>%
     purrr::keep(~length(.) >= 5) %>%
+    purrr::discard(~grepl("Obstruction|Written|Verbal|Reprimand|Fine|Disqualification",paste(.,collapse = ""))) %>%
     purrr::map(.f = function(x) setNames(x,cn[1:length(x)]))
   race <- race[-1]
   race <- race %>%
