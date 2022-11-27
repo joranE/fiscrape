@@ -27,7 +27,7 @@ spr_heat_scrape <- function(url,race){
            time = if_else(time %in% c("DNF","DNS","RAL","DSQ"),"",time)) %>%
     mutate(time = time_to_seconds(time)) %>%
     select(-rank) %>%
-    rename(heat_time = time)
+    rename(heat_time = time)  
   
   #Check for mismatched names
   race_names <- select(race,eventid,compid,name)
@@ -63,7 +63,8 @@ spr_heat_scrape <- function(url,race){
   }
   
   spr_heats_clean <- spr_heats_clean %>%
-    select(eventid,compid,heat,everything())
+    select(eventid,compid,heat,everything()) %>%
+    dplyr::mutate_if(.predicate = bit64::is.integer64,.funs = as.integer)
   
 }
 

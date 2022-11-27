@@ -25,17 +25,18 @@ dst_split_scrape <- function(url,race){
     unlist() %>%
     unique()
   
-  time_pts_val <- time_pts_val[!grepl("bonus",time_pts_val)]
+  time_pts_val <- time_pts_val[!grepl("bonus|TdS",time_pts_val)]
   
   if (length(time_pts_lab) != length(time_pts_val)){
     message("Split point values and labels have different lengths. Fixing...")
     #browser()
     n <- length(time_pts_val)
-    time_pts_val <- time_pts_val[-c(2,3,n-1)]
+    time_pts_val <- time_pts_val[-c(2,3)]
+    time_pts_val <- time_pts_val[!grepl('finish|standing',time_pts_val)]
   }
   time_pts <- data.frame(val = time_pts_val,
                          lab = time_pts_lab,stringsAsFactors = F) %>%
-    filter(!grepl("^Start|^Bonus",lab))
+    filter(!grepl("^Start|^Bonus|^TdS",lab))
   
   #Verify split time points
   print(time_pts)
