@@ -8,9 +8,12 @@ spr_heat_scrape <- function(url,race){
   spr_heats <- vector(mode = "list",length = 8)
   heat_params <- list(c(1,1),c(1,2),c(1,3),c(1,4),c(1,5),c(2,1),c(2,2),c(3,1))
   for (i in seq_along(spr_heats)){
+    #message("Fetching heats...")
+    #Sys.sleep(10)
     url_q <- sprintf(url_base,heat_params[[i]][1],heat_params[[i]][2])
     spr_heats[[i]] <- read_html(x = url_q) %>%
       parse_heat_html(.,round = heat_params[[i]])
+    #message("got it!",appendLF = TRUE)
   }
   spr_heats_clean <- bind_rows(spr_heats) %>%
     mutate(name = stringr::str_trim(name),
@@ -36,6 +39,28 @@ spr_heat_scrape <- function(url,race){
     mutate(eventid = race$eventid[1]) %>%
     dplyr::mutate_if(.predicate = bit64::is.integer64,.funs = as.integer)
   
+  if (all(is.na(name_check$compid))){
+    message("Unable to match any names, attempting fuzzy join.")
+    name_check <- spr_heats_clean %>%
+      mutate(rn = row_number()) %>%
+      fuzzyjoin::stringdist_left_join(
+        race_names,
+        by = 'name',
+        method = 'cosine',
+        ignore_case = TRUE,
+        distance_col = 'cosine_dist',
+        max_dist = 0.01) %>%
+      group_by(rn) %>%
+      slice_min(order_by = cosine_dist,n = 1,with_ties = FALSE,na_rm = FALSE) %>%
+        ungroup()
+    
+    name_check <- name_check %>%
+      select(-name.y,-cosine_dist,-rn) %>%
+      rename(name = name.x) %>%
+      dplyr::mutate_if(.predicate = bit64::is.integer64,.funs = as.integer)
+      
+  }
+  
   if (any(is.na(name_check$compid))){
     print(arrange(race_names,name))
     missing_compid <- filter(name_check,is.na(compid))
@@ -56,8 +81,8 @@ spr_heat_scrape <- function(url,race){
       }
     }
   } else {
-    spr_heats_clean <- spr_heats_clean %>%
-      left_join(race_names,by = "name") %>%
+    spr_heats_clean <- name_check %>% #spr_heats_clean %>%
+      #left_join(race_names,by = "name") %>%
       select(-name,-nation) %>%
       select(eventid,compid,everything())
   }
@@ -85,10 +110,13 @@ parse_heat_html <- function(x,round){
     rank <- name <- nsa <- result <- NA_character_
   }
   
+  min_len <- min(length(rank),length(name),length(nsa),length(result))
+  idx <- seq_len(min_len)
+  
   data.frame(heat = paste(round,collapse = ""),
-             rank = rank,
-             name = name,
-             nation = nsa,
-             time = result,
+             rank = rank[idx],
+             name = name[idx],
+             nation = nsa[idx],
+             time = result[idx],
              stringsAsFactors = FALSE)
 }
