@@ -36,6 +36,7 @@ enter_new_race <- function(update_bdays = FALSE){
       message("Inserting event tags...")
       insert_data(dst_data$event_tags,"event_tag",conl)
       if (nrow(skiers) > 0){
+        message("Checking for new skier bdays...")
         skiers <- add_bdays(skiers)
         message("Inserting skiers...")
         insert_data(skiers,"skier",conl)
@@ -98,6 +99,7 @@ enter_new_race <- function(update_bdays = FALSE){
       message("Inserting event tags...")
       insert_data(stg_data$event_tags,"event_tag",conl)
       if (nrow(skiers) > 0){
+        message("Checking for new skier bdays...")
         skiers <- add_bdays(skiers)
         insert_data(skiers,"skier",conl)
       }
@@ -182,7 +184,7 @@ enter_new_race <- function(update_bdays = FALSE){
       skiers <- skiers[!duplicated(skiers$compid),]
     }
     event <- bind_rows(spr_qual_data$event,bind_rows(lapply(spr_fin_data_list,'[[',"event"))) %>%
-      select(-format) %>%
+      select(-format,-site) %>%
       distinct()
     event_tags <- spr_qual_data$event_tags
     
@@ -209,12 +211,14 @@ enter_new_race <- function(update_bdays = FALSE){
     # spr_fin_result table
     # heat time data (if applicable)
     # event_url table
+    #browser()
     DBI::dbWithTransaction(conl,{
       message("Inserting event...",event$eventid)
       insert_data(event,"spr_event",conl)
       message("Inserting event tags...")
       insert_data(event_tags,"event_tag",conl)
       if (nrow(skiers) > 0){
+        message("Checking for new skier bdays...")
         skiers <- add_bdays(skiers)
         insert_data(skiers,"skier",conl)
       }
