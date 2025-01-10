@@ -56,14 +56,33 @@ spr_final_scrape <- function(event_info,idx,override_eventid = NULL){
     html_nodes(css = ".g-row.justify-sb") %>%
     map(.f = row_text_extractor)
   cn <- keep(race,function(x) x[1] == "Rank")[[1]]
+  
   race <- race %>%
     purrr::keep(~length(.) >= 5) %>%
-    purrr::discard(~grepl("Obstruction|Written|Verbal|Reprimand|Fine|Disqualification",paste(.,collapse = ""))) %>%
-    purrr::map(.f = function(x) setNames(x,cn[1:length(x)]))
+    purrr::discard(~grepl("Obstruction|Written|Verbal|Reprimand|Monetary Fine|Disqualification|False Start",paste(.,collapse = "")))
   race <- race[-1]
+  
+  row_lengths <- sapply(race,length)
+  unique_row_lengths <- unique(row_lengths)
+  if (length(unique_row_lengths) == 2 && diff(unique_row_lengths) == -1){
+    message("Removing 'Bib' column to align columns...",appendLF = TRUE)
+    race <- lapply(X = race,FUN = \(x) if (length(x) == unique_row_lengths[1]) x[-2] else x)
+    cn_short <- cn[-2]
+    race <- race %>% 
+      purrr::map(.f = function(x) setNames(x,cn_short[1:length(x)]))
+  } else {
+    race <- race %>%
+      purrr::map(.f = function(x) setNames(x,cn[1:length(x)]))
+  }
+  
+  new_row_lengths <- unique(sapply(race,length))
+  if (length(new_row_lengths) != 1) {
+    browser()
+  }
+  
   race <- race %>%
-    setNames(.,compids)
-  race <- bind_rows(!!!race,.id = "compid") %>%
+    setNames(.,compids) %>%
+    bind_rows(.id = "compid") %>%
     select(-matches("Bib")) %>%
     janitor::clean_names(.,case = "snake") %>%
     rename(fisid = fis_code,name = athlete,
