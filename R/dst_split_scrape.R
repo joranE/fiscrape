@@ -16,12 +16,12 @@ dst_split_scrape <- function(url,race){
   }
   
   time_pts_lab <- html %>%
-    html_nodes("option") %>%
+    html_elements(xpath = "//option[@data-title='inter' or @data-title='finish']") %>%
     html_text() %>%
     unique()
   time_pts_val <- html %>%
-    html_nodes("option") %>%
-    html_attrs() %>%
+    html_elements(xpath = "//option[@data-title='inter' or @data-title='finish']") %>%
+    html_attr(name = "value") %>%
     unlist() %>%
     unique()
   
@@ -29,10 +29,21 @@ dst_split_scrape <- function(url,race){
   
   if (length(time_pts_lab) != length(time_pts_val)){
     message("Split point values and labels have different lengths. Fixing...")
-    #browser()
-    n <- length(time_pts_val)
-    time_pts_val <- time_pts_val[-c(2,3)]
-    time_pts_val <- time_pts_val[!grepl('finish|standing',time_pts_val)]
+    
+    orig_time_pts_lab <- time_pts_lab
+    orig_time_pts_val <- time_pts_val
+    
+    #n <- length(time_pts_val)
+    #time_pts_val <- time_pts_val[-c(2,3)]
+    #time_pts_val <- time_pts_val[!grepl('finish|standing',time_pts_val)]
+    time_pts_lab <- orig_time_pts_lab[grepl("[0-9]",orig_time_pts_lab)]
+    time_pts_val <- orig_time_pts_val[grepl("^[0-9]",orig_time_pts_val)]
+    
+    time_pts_val <- time_pts_val[nchar(time_pts_val) <= 2]
+    time_pts_lab <- time_pts_lab[!grepl("Bonus points at",time_pts_lab)]
+  }
+  if (length(time_pts_val) != length(time_pts_lab)){
+    browser()
   }
   time_pts <- data.frame(val = time_pts_val,
                          lab = time_pts_lab,stringsAsFactors = F) %>%
@@ -114,6 +125,7 @@ dst_split_scrape <- function(url,race){
   
   all_splits
 }
+
 
 parse_split_html <- function(x){
   rank <- html_nodes(x,css = ".col_rank") %>% html_text()
